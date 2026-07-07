@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import xgboost as xgb
+from itertools import product
 from sklearn.model_selection import GroupKFold
 from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
@@ -16,7 +17,7 @@ X = df.drop(['injury_occurred', 'athlete_id', 'session_id'], axis=1)
 y = df['injury_occurred']
 groups = df['athlete_id']
 
-# 2. Definizione delle Opzioni da Esplorare
+# 2. Definition of preprocessing and model options
 imputer_options = [
     ('KNN', KNNImputer(n_neighbors=5)),
     ('Median', SimpleImputer(strategy='median')),
@@ -30,12 +31,32 @@ scaler_options = [
 
 balance_options = ['ClassWeight', 'SMOTE']
 
+# Build the hyperparameter grid so every combination is evaluated.
+param_grid = {
+    'max_depth': [3, 4, 5],
+    'learning_rate': [0.01, 0.05, 0.1],
+    'n_estimators': [200, 300, 500],
+    'subsample': [0.8, 1.0],
+    'colsample_bytree': [0.8, 1.0]
+}
+
 param_options = [
     ('Default', {}),
-    ('Tuned', {'max_depth': 3, 'learning_rate': 0.05, 'n_estimators': 300})
+    *[
+        (
+            ", ".join(f"{key}={value}" for key, value in zip(param_grid.keys(), values)),
+            dict(zip(param_grid.keys(), values))
+        )
+        for values in product(*param_grid.values())
+    ]
 ]
 
 gkf = GroupKFold(n_splits=5)
+best_result = {
+    'score': -np.inf,
+    'combo_name': None,
+    'metrics': None,
+}
 
 # 3. Open the results text file and start the experiment loops
 with open("experiment_results.txt", "w") as file:
@@ -51,7 +72,7 @@ with open("experiment_results.txt", "w") as file:
                 for p_name, p_dict in param_options:
                     
                     combo_name = f"{imp_name} | {scl_name} | {bal_name} | {p_name}"
-                    macro_f1s, recall_class1_scores, recall_class2_scores = [], [], []
+                    macro_f1s, recall_class0_scores, recall_class1_scores, recall_class2_scores = [], [], [], []
                     
                     try:
                         for train_idx, test_idx in gkf.split(X, y, groups=groups):
@@ -104,24 +125,56 @@ with open("experiment_results.txt", "w") as file:
                             y_pred = model.predict(X_test_proc)
                             fold_f1 = f1_score(y_test, y_pred, average='macro')
                             recalls = recall_score(y_test, y_pred, average=None, labels=[0, 1, 2], zero_division=0)
+                            fold_recall_c0 = recalls[0]
                             fold_recall_c1 = recalls[1]
                             fold_recall_c2 = recalls[2]
 
+
                             macro_f1s.append(fold_f1)
+                            recall_class0_scores.append(fold_recall_c0)
                             recall_class1_scores.append(fold_recall_c1)
                             recall_class2_scores.append(fold_recall_c2)
                             
                         # Write results on success
                         res_str = (
                             f"{combo_name} || F1: {np.mean(macro_f1s):.3f} | "
+                            f"Rec0: {np.mean(recall_class0_scores):.3f} | "
                             f"Rec1: {np.mean(recall_class1_scores):.3f} | "
                             f"Rec2: {np.mean(recall_class2_scores):.3f}\n"
                         )
                         file.write(res_str)
                         print(res_str.strip())
+
+                        mean_macro_f1 = float(np.mean(macro_f1s))
+                        if mean_macro_f1 > best_result['score']:
+                            # Keep the best configuration according to macro F1.
+                            best_result = {
+                                'score': mean_macro_f1,
+                                'combo_name': combo_name,
+                                'metrics': {
+                                    'recall_c0': float(np.mean(recall_class0_scores)),
+                                    'recall_c1': float(np.mean(recall_class1_scores)),
+                                    'recall_c2': float(np.mean(recall_class2_scores)),
+                                },
+                            }
                         
                     except Exception as e:
                         # Write errors (e.g. SMOTE fails if there are NaNs)
                         err_str = f"{combo_name} || FAILED ({type(e).__name__})\n"
                         file.write(err_str)
                         print(err_str.strip())
+
+    file.write("\nBEST CONFIGURATION\n")
+    if best_result['combo_name'] is not None:
+        best_summary = (
+            f"{best_result['combo_name']} || F1: {best_result['score']:.3f} | "
+            f"Rec0: {best_result['metrics']['recall_c0']:.3f} | "
+            f"Rec1: {best_result['metrics']['recall_c1']:.3f} | "
+            f"Rec2: {best_result['metrics']['recall_c2']:.3f}\n"
+        )
+        file.write(best_summary)
+        print("\nBest configuration:")
+        print(best_summary.strip())
+    else:
+        file.write("No valid configuration was found.\n")
+        print("\nNo valid configuration was found.")
