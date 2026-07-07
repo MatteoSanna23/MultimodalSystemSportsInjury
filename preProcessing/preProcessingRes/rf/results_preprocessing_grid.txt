@@ -1,0 +1,12 @@
+Missing | Normalization | Balancing || Macro F1 | Recall C1 | Recall C2
+--------------------------------------------------------------------------------------------------------------
+missing:KNN, norm:STD, balance:class_weight || F1: 0.458 | Rec0: 0.842 | Rec1: 0.021 | Rec2: 0.701
+missing:KNN, norm:STD, balance:SMOTE || F1: 0.448 | Rec0: 0.846 | Rec1: 0.015 | Rec2: 0.662
+missing:KNN, norm:MinMax, balance:class_weight || F1: 0.458 | Rec0: 0.842 | Rec1: 0.021 | Rec2: 0.700
+missing:KNN, norm:MinMax, balance:SMOTE || F1: 0.479 | Rec0: 0.670 | Rec1: 0.177 | Rec2: 0.713
+missing:MEDIAN, norm:STD, balance:class_weight || F1: 0.456 | Rec0: 0.842 | Rec1: 0.019 | Rec2: 0.702
+missing:MEDIAN, norm:STD, balance:SMOTE || F1: 0.449 | Rec0: 0.850 | Rec1: 0.019 | Rec2: 0.649
+missing:MEDIAN, norm:MinMax, balance:class_weight || F1: 0.456 | Rec0: 0.842 | Rec1: 0.020 | Rec2: 0.702
+missing:MEDIAN, norm:MinMax, balance:SMOTE || F1: 0.477 | Rec0: 0.669 | Rec1: 0.171 | Rec2: 0.713
+--------------------------------------------------------------------------------------------------------------
+BEST PREPROCESSING CONFIG: {'missing': 'KNN', 'normalization': 'MinMax', 'balancing': 'SMOTE'} with F1: 0.479

@@ -1,0 +1,28 @@
+RF Params || Macro F1 | Recall C0 | Recall C1 | Recall C2
+------------------------------------------------------------------------------------------
+n:200, d:10, leaf:1, feat:sqrt || F1: 0.460 | Rec0: 0.480 | Rec1: 0.311 | Rec2: 0.800
+n:300, d:10, leaf:1, feat:sqrt || F1: 0.458 | Rec0: 0.477 | Rec1: 0.305 | Rec2: 0.805
+n:200, d:10, leaf:5, feat:sqrt || F1: 0.457 | Rec0: 0.474 | Rec1: 0.310 | Rec2: 0.802
+n:300, d:10, leaf:5, feat:sqrt || F1: 0.457 | Rec0: 0.476 | Rec1: 0.308 | Rec2: 0.803
+n:200, d:10, leaf:1, feat:log2 || F1: 0.456 | Rec0: 0.476 | Rec1: 0.310 | Rec2: 0.790
+n:300, d:10, leaf:1, feat:log2 || F1: 0.457 | Rec0: 0.477 | Rec1: 0.311 | Rec2: 0.794
+n:200, d:10, leaf:5, feat:log2 || F1: 0.456 | Rec0: 0.475 | Rec1: 0.312 | Rec2: 0.793
+n:300, d:10, leaf:5, feat:log2 || F1: 0.456 | Rec0: 0.480 | Rec1: 0.302 | Rec2: 0.796
+n:200, d:20, leaf:1, feat:sqrt || F1: 0.481 | Rec0: 0.667 | Rec1: 0.183 | Rec2: 0.713
+n:300, d:20, leaf:1, feat:sqrt || F1: 0.479 | Rec0: 0.670 | Rec1: 0.177 | Rec2: 0.713
+n:200, d:20, leaf:5, feat:sqrt || F1: 0.476 | Rec0: 0.645 | Rec1: 0.177 | Rec2: 0.753
+n:300, d:20, leaf:5, feat:sqrt || F1: 0.477 | Rec0: 0.646 | Rec1: 0.180 | Rec2: 0.752
+n:200, d:20, leaf:1, feat:log2 || F1: 0.480 | Rec0: 0.664 | Rec1: 0.183 | Rec2: 0.715
+n:300, d:20, leaf:1, feat:log2 || F1: 0.480 | Rec0: 0.669 | Rec1: 0.175 | Rec2: 0.721
+n:200, d:20, leaf:5, feat:log2 || F1: 0.476 | Rec0: 0.639 | Rec1: 0.189 | Rec2: 0.742
+n:300, d:20, leaf:5, feat:log2 || F1: 0.477 | Rec0: 0.643 | Rec1: 0.188 | Rec2: 0.741
+n:200, d:None, leaf:1, feat:sqrt || F1: 0.471 | Rec0: 0.735 | Rec1: 0.111 | Rec2: 0.689
+n:300, d:None, leaf:1, feat:sqrt || F1: 0.474 | Rec0: 0.740 | Rec1: 0.113 | Rec2: 0.694
+n:200, d:None, leaf:5, feat:sqrt || F1: 0.473 | Rec0: 0.686 | Rec1: 0.139 | Rec2: 0.741
+n:300, d:None, leaf:5, feat:sqrt || F1: 0.474 | Rec0: 0.692 | Rec1: 0.136 | Rec2: 0.743
+n:200, d:None, leaf:1, feat:log2 || F1: 0.473 | Rec0: 0.736 | Rec1: 0.116 | Rec2: 0.687
+n:300, d:None, leaf:1, feat:log2 || F1: 0.473 | Rec0: 0.742 | Rec1: 0.112 | Rec2: 0.687
+n:200, d:None, leaf:5, feat:log2 || F1: 0.475 | Rec0: 0.685 | Rec1: 0.142 | Rec2: 0.744
+n:300, d:None, leaf:5, feat:log2 || F1: 0.474 | Rec0: 0.689 | Rec1: 0.140 | Rec2: 0.743
+------------------------------------------------------------------------------------------
+BEST RF CONFIG: {'max_depth': 20, 'max_features': 'sqrt', 'min_samples_leaf': 1, 'n_estimators': 200} with F1: 0.481
