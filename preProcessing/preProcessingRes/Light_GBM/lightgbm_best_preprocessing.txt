@@ -1,0 +1,17 @@
+PHASE 1 - PREPROCESSING SELECTION
+Imputer | Scaler | Balancing || Macro F1 | Recall C0 | Recall C1 | Recall C2
+----------------------------------------------------------------------------------------------------
+KNN | StdScaler | ClassWeight || F1: 0.478 | Rec0: 0.601 | Rec1: 0.210 | Rec2: 0.783
+KNN | StdScaler | SMOTE || F1: 0.448 | Rec0: 0.881 | Rec1: 0.007 | Rec2: 0.618
+KNN | MinMaxScaler | ClassWeight || F1: 0.478 | Rec0: 0.597 | Rec1: 0.212 | Rec2: 0.784
+KNN | MinMaxScaler | SMOTE || F1: 0.461 | Rec0: 0.828 | Rec1: 0.039 | Rec2: 0.668
+Median | StdScaler | ClassWeight || F1: 0.479 | Rec0: 0.599 | Rec1: 0.211 | Rec2: 0.795
+Median | StdScaler | SMOTE || F1: 0.449 | Rec0: 0.883 | Rec1: 0.006 | Rec2: 0.618
+Median | MinMaxScaler | ClassWeight || F1: 0.481 | Rec0: 0.606 | Rec1: 0.215 | Rec2: 0.781
+Median | MinMaxScaler | SMOTE || F1: 0.461 | Rec0: 0.831 | Rec1: 0.036 | Rec2: 0.671
+Native_LightGBM | StdScaler | ClassWeight || F1: 0.479 | Rec0: 0.609 | Rec1: 0.203 | Rec2: 0.784
+Native_LightGBM | StdScaler | SMOTE || FAILED (ValueError)
+Native_LightGBM | MinMaxScaler | ClassWeight || F1: 0.480 | Rec0: 0.599 | Rec1: 0.215 | Rec2: 0.788
+Native_LightGBM | MinMaxScaler | SMOTE || FAILED (ValueError)
+----------------------------------------------------------------------------------------------------
+BEST PREPROCESSING: Median | MinMaxScaler | ClassWeight || F1: 0.481 | Rec0: 0.606 | Rec1: 0.215 | Rec2: 0.781

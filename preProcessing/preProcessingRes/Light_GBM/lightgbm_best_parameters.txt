@@ -1,0 +1,23 @@
+PHASE 2 - PARAMETER SEARCH ON BEST PREPROCESSING
+Params || Macro F1 | Recall C0 | Recall C1 | Recall C2
+----------------------------------------------------------------------------------------------------
+max_depth=3 | learning_rate=0.01 | n_estimators=200 || F1: 0.421 | Rec0: 0.339 | Rec1: 0.378 | Rec2: 0.879
+max_depth=3 | learning_rate=0.01 | n_estimators=300 || F1: 0.429 | Rec0: 0.361 | Rec1: 0.358 | Rec2: 0.885
+max_depth=3 | learning_rate=0.01 | n_estimators=500 || F1: 0.441 | Rec0: 0.384 | Rec1: 0.353 | Rec2: 0.892
+max_depth=5 | learning_rate=0.01 | n_estimators=200 || F1: 0.446 | Rec0: 0.403 | Rec1: 0.344 | Rec2: 0.882
+max_depth=5 | learning_rate=0.01 | n_estimators=300 || F1: 0.451 | Rec0: 0.426 | Rec1: 0.323 | Rec2: 0.879
+max_depth=5 | learning_rate=0.01 | n_estimators=500 || F1: 0.459 | Rec0: 0.460 | Rec1: 0.299 | Rec2: 0.871
+max_depth=3 | learning_rate=0.05 | n_estimators=200 || F1: 0.451 | Rec0: 0.427 | Rec1: 0.320 | Rec2: 0.871
+max_depth=3 | learning_rate=0.05 | n_estimators=300 || F1: 0.462 | Rec0: 0.459 | Rec1: 0.308 | Rec2: 0.864
+max_depth=3 | learning_rate=0.05 | n_estimators=500 || F1: 0.473 | Rec0: 0.491 | Rec1: 0.306 | Rec2: 0.842
+max_depth=5 | learning_rate=0.05 | n_estimators=200 || F1: 0.471 | Rec0: 0.524 | Rec1: 0.260 | Rec2: 0.839
+max_depth=5 | learning_rate=0.05 | n_estimators=300 || F1: 0.478 | Rec0: 0.569 | Rec1: 0.235 | Rec2: 0.814
+max_depth=5 | learning_rate=0.05 | n_estimators=500 || F1: 0.480 | Rec0: 0.633 | Rec1: 0.198 | Rec2: 0.745
+max_depth=3 | learning_rate=0.1 | n_estimators=200 || F1: 0.467 | Rec0: 0.482 | Rec1: 0.296 | Rec2: 0.849
+max_depth=3 | learning_rate=0.1 | n_estimators=300 || F1: 0.474 | Rec0: 0.507 | Rec1: 0.292 | Rec2: 0.826
+max_depth=3 | learning_rate=0.1 | n_estimators=500 || F1: 0.480 | Rec0: 0.547 | Rec1: 0.273 | Rec2: 0.789
+max_depth=5 | learning_rate=0.1 | n_estimators=200 || F1: 0.482 | Rec0: 0.596 | Rec1: 0.221 | Rec2: 0.786
+max_depth=5 | learning_rate=0.1 | n_estimators=300 || F1: 0.484 | Rec0: 0.653 | Rec1: 0.191 | Rec2: 0.731
+max_depth=5 | learning_rate=0.1 | n_estimators=500 || F1: 0.483 | Rec0: 0.721 | Rec1: 0.152 | Rec2: 0.658
+----------------------------------------------------------------------------------------------------
+BEST PARAMS ON BEST PREPROCESSING: max_depth=5 | learning_rate=0.1 | n_estimators=300 || F1: 0.484 | Rec0: 0.653 | Rec1: 0.191 | Rec2: 0.731
