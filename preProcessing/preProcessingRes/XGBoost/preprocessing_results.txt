@@ -1,0 +1,22 @@
+PHASE 1: PREPROCESSING SCREENING
+--------------------------------------------------------------------------------
+Imputer | Scaler | Balancing || Macro F1
+--------------------------------------------------------------------------------
+KNN | StdScaler | ClassWeight || F1: 0.483
+KNN | StdScaler | SMOTE || F1: 0.460
+KNN | MinMaxScaler | ClassWeight || F1: 0.480
+KNN | MinMaxScaler | SMOTE || F1: 0.472
+Median | StdScaler | ClassWeight || F1: 0.487
+Median | StdScaler | SMOTE || F1: 0.462
+Median | MinMaxScaler | ClassWeight || F1: 0.487
+Median | MinMaxScaler | SMOTE || F1: 0.466
+Native_XGB | StdScaler | ClassWeight || F1: 0.484
+Native_XGB | StdScaler | SMOTE || FAILED (ValueError)
+Native_XGB | MinMaxScaler | ClassWeight || F1: 0.483
+Native_XGB | MinMaxScaler | SMOTE || FAILED (ValueError)
+
+============================================================
+PHASE 1 WINNER (BEST PREPROCESSING)
+============================================================
+Combination: Median | StdScaler | ClassWeight
+Macro F1 Score: 0.487
