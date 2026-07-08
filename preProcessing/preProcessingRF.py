@@ -9,7 +9,7 @@ from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.impute import KNNImputer, SimpleImputer
 from sklearn.model_selection import ParameterGrid
-from sklearn.metrics import f1_score, recall_score
+from sklearn.metrics import fbeta_score, recall_score
 from sklearn.model_selection import GroupKFold
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import MinMaxScaler, OneHotEncoder, StandardScaler
@@ -74,16 +74,21 @@ def build_preprocessor(
 
 
 os.makedirs("./preProcessingRes/rf", exist_ok=True)
+preprocessing_results_path = "./preProcessingRes/rf/rf_best_preporcessing.txt"
+rf_results_path = "./preProcessingRes/rf/rf_best_parameters.txt"
 
 # 3. Grid search with subject-wise cross-validation on preprocessing only
-with open("./preProcessingRes/rf/results_preprocessing_grid.txt", "w") as file:
-    header = "Missing | Normalization | Balancing || Macro F1 | Recall C1 | Recall C2\n"
+with open(preprocessing_results_path, "w") as file:
+    header = "Missing | Normalization | Balancing || Macro F2 | F2 C0 | F2 C1 | F2 C2 | Recall C0 | Recall C1 | Recall C2\n"
     file.write(header)
     file.write("-" * 110 + "\n")
     print("Starting preprocessing grid search for Random Forest...\n")
 
-    best_f1 = -np.inf
+    best_f2_c2 = -np.inf
     best_config = None
+    best_macro_f2 = None
+    best_f2_c0 = None
+    best_f2_c1 = None
     best_rec0 = None
     best_rec1 = None
     best_rec2 = None
@@ -97,7 +102,8 @@ with open("./preProcessingRes/rf/results_preprocessing_grid.txt", "w") as file:
             f"missing:{missing_name}, norm:{norm_name}, balance:{balancing_name}"
         )
 
-        macro_f1s, recall_c0s, recall_c1s, recall_c2s = [], [], [], []
+        macro_f2s, f2_c0s, f2_c1s, f2_c2s = [], [], [], []
+        recall_c0s, recall_c1s, recall_c2s = [], [], []
 
         for train_idx, test_idx in gkf.split(X, y, groups=groups):
             X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
@@ -133,7 +139,13 @@ with open("./preProcessingRes/rf/results_preprocessing_grid.txt", "w") as file:
             model.fit(X_train_proc, y_train)
 
             y_pred = model.predict(X_test_proc)
-            macro_f1s.append(f1_score(y_test, y_pred, average="macro"))
+            f2s = fbeta_score(
+                y_test, y_pred, labels=[0, 1, 2], average=None, zero_division=0, beta=2
+            )
+            f2_c0s.append(f2s[0])
+            f2_c1s.append(f2s[1])
+            f2_c2s.append(f2s[2])
+            macro_f2s.append(np.mean(f2s))
 
             recalls = recall_score(
                 y_test, y_pred, labels=[0, 1, 2], average=None, zero_division=0
@@ -142,36 +154,42 @@ with open("./preProcessingRes/rf/results_preprocessing_grid.txt", "w") as file:
             recall_c1s.append(recalls[1])
             recall_c2s.append(recalls[2])
 
-        avg_f1 = np.mean(macro_f1s)
+        avg_f2 = np.mean(macro_f2s)
+        avg_f2_c0 = np.mean(f2_c0s)
+        avg_f2_c1 = np.mean(f2_c1s)
+        avg_f2_c2 = np.mean(f2_c2s)
         avg_rec0 = np.mean(recall_c0s)
         avg_rec1 = np.mean(recall_c1s)
         avg_rec2 = np.mean(recall_c2s)
 
-        if avg_f1 > best_f1:
-            best_f1 = avg_f1
+        if avg_f2_c2 > best_f2_c2:
+            best_f2_c2 = avg_f2_c2
             best_rec0 = avg_rec0
             best_rec1 = avg_rec1
             best_rec2 = avg_rec2
+            best_macro_f2 = avg_f2
+            best_f2_c0 = avg_f2_c0
+            best_f2_c1 = avg_f2_c1
             best_config = {
                 "missing": missing_name,
                 "normalization": norm_name,
                 "balancing": balancing_name,
             }
 
-        res_str = f"{config_label} || F1: {avg_f1:.3f} | Rec0: {avg_rec0:.3f} | Rec1: {avg_rec1:.3f} | Rec2: {avg_rec2:.3f}\n"
+        res_str = (
+            f"{config_label} || F2M: {avg_f2:.3f} | F20: {avg_f2_c0:.3f} | "
+            f"F21: {avg_f2_c1:.3f} | F22: {avg_f2_c2:.3f} | "
+            f"Rec0: {avg_rec0:.3f} | Rec1: {avg_rec1:.3f} | Rec2: {avg_rec2:.3f}\n"
+        )
         file.write(res_str)
         print(res_str.strip())
 
     file.write("-" * 110 + "\n")
-    file.write(f"BEST PREPROCESSING CONFIG: {best_config} with F1: {best_f1:.3f}\n")
+    file.write(
+        f"BEST PREPROCESSING CONFIG (by F2 C2): {best_config} with F22: {best_f2_c2:.3f} "
+        f"| F2M: {best_macro_f2:.3f} | F20: {best_f2_c0:.3f} | F21: {best_f2_c1:.3f}\n"
+    )
     print(f"\nPreprocessing grid search completed! Best configuration: {best_config}")
-
-with open("./preProcessingRes/rf/best_preprocessing_config.txt", "w") as best_file:
-    best_file.write(f"BEST PREPROCESSING CONFIG: {best_config}\n")
-    best_file.write(f"BEST PREPROCESSING F1: {best_f1:.3f}\n")
-    best_file.write(f"BEST PREPROCESSING Rec0: {best_rec0:.3f}\n")
-    best_file.write(f"BEST PREPROCESSING Rec1: {best_rec1:.3f}\n")
-    best_file.write(f"BEST PREPROCESSING Rec2: {best_rec2:.3f}\n")
 
 
 def get_transformers_from_best_config(config):
@@ -185,17 +203,21 @@ best_missing_transformer, best_norm_transformer = get_transformers_from_best_con
 )
 
 # 4. Grid search for Random Forest using the best preprocessing configuration
-with open("./preProcessingRes/rf/results_random_forest_grid.txt", "w") as file:
-    header = "RF Params || Macro F1 | Recall C0 | Recall C1 | Recall C2\n"
+with open(rf_results_path, "w") as file:
+    header = "RF Params || Macro F2 | F2 C0 | F2 C1 | F2 C2 | Recall C0 | Recall C1 | Recall C2\n"
     file.write(header)
     file.write("-" * 90 + "\n")
     print("Starting Random Forest grid search with best preprocessing...\n")
 
-    best_rf_f1 = -np.inf
+    best_rf_f2_c2 = -np.inf
     best_rf_config = None
+    best_rf_macro_f2 = None
+    best_rf_f2_c0 = None
+    best_rf_f2_c1 = None
 
     for config in rf_grid_configs:
-        macro_f1s, recall_c0s, recall_c1s, recall_c2s = [], [], [], []
+        macro_f2s, f2_c0s, f2_c1s, f2_c2s = [], [], [], []
+        recall_c0s, recall_c1s, recall_c2s = [], [], []
 
         for train_idx, test_idx in gkf.split(X, y, groups=groups):
             X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
@@ -227,7 +249,13 @@ with open("./preProcessingRes/rf/results_random_forest_grid.txt", "w") as file:
             model.fit(X_train_proc, y_train)
 
             y_pred = model.predict(X_test_proc)
-            macro_f1s.append(f1_score(y_test, y_pred, average="macro"))
+            f2s = fbeta_score(
+                y_test, y_pred, labels=[0, 1, 2], average=None, zero_division=0, beta=2
+            )
+            f2_c0s.append(f2s[0])
+            f2_c1s.append(f2s[1])
+            f2_c2s.append(f2s[2])
+            macro_f2s.append(np.mean(f2s))
 
             recalls = recall_score(
                 y_test, y_pred, labels=[0, 1, 2], average=None, zero_division=0
@@ -236,25 +264,38 @@ with open("./preProcessingRes/rf/results_random_forest_grid.txt", "w") as file:
             recall_c1s.append(recalls[1])
             recall_c2s.append(recalls[2])
 
-        avg_f1 = np.mean(macro_f1s)
+        avg_f2 = np.mean(macro_f2s)
+        avg_f2_c0 = np.mean(f2_c0s)
+        avg_f2_c1 = np.mean(f2_c1s)
+        avg_f2_c2 = np.mean(f2_c2s)
         avg_rec0 = np.mean(recall_c0s)
         avg_rec1 = np.mean(recall_c1s)
         avg_rec2 = np.mean(recall_c2s)
 
-        if avg_f1 > best_rf_f1:
-            best_rf_f1 = avg_f1
+        if avg_f2_c2 > best_rf_f2_c2:
+            best_rf_f2_c2 = avg_f2_c2
             best_rf_config = config
+            best_rf_macro_f2 = avg_f2
+            best_rf_f2_c0 = avg_f2_c0
+            best_rf_f2_c1 = avg_f2_c1
 
         config_str = (
             f"n:{config['n_estimators']}, d:{config['max_depth']}, "
             f"leaf:{config['min_samples_leaf']}, feat:{config['max_features']}"
         )
-        res_str = f"{config_str} || F1: {avg_f1:.3f} | Rec0: {avg_rec0:.3f} | Rec1: {avg_rec1:.3f} | Rec2: {avg_rec2:.3f}\n"
+        res_str = (
+            f"{config_str} || F2M: {avg_f2:.3f} | F20: {avg_f2_c0:.3f} | "
+            f"F21: {avg_f2_c1:.3f} | F22: {avg_f2_c2:.3f} | "
+            f"Rec0: {avg_rec0:.3f} | Rec1: {avg_rec1:.3f} | Rec2: {avg_rec2:.3f}\n"
+        )
         file.write(res_str)
         print(res_str.strip())
 
     file.write("-" * 90 + "\n")
-    file.write(f"BEST RF CONFIG: {best_rf_config} with F1: {best_rf_f1:.3f}\n")
+    file.write(
+        f"BEST RF CONFIG (by F2 C2): {best_rf_config} with F22: {best_rf_f2_c2:.3f} "
+        f"| F2M: {best_rf_macro_f2:.3f} | F20: {best_rf_f2_c0:.3f} | F21: {best_rf_f2_c1:.3f}\n"
+    )
     print(
         f"\nRandom Forest grid search completed! Best configuration: {best_rf_config}"
     )
