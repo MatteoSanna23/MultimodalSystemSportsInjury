@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import shap
 import xgboost as xgb
+import matplotlib.pyplot as plt
 from imblearn.over_sampling import SMOTE
 from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import RandomForestClassifier
@@ -26,12 +27,12 @@ MODEL_SPECS = {
         'output_file': RESULTS_DIR / 'lightgbm_shap_report.txt',
         'preprocessing': {
             'imputer': 'Median',
-            'scaler': 'MinMaxScaler',
+            'scaler': 'StdScaler',
             'balancing': 'ClassWeight',
         },
         'params': {
-            'max_depth': 5,
-            'learning_rate': 0.1,
+            'max_depth': 3,
+            'learning_rate': 0.05,
             'n_estimators': 300,
         },
         'use_gpu': True,
@@ -41,13 +42,13 @@ MODEL_SPECS = {
         'output_file': RESULTS_DIR / 'xgboost_shap_report.txt',
         'preprocessing': {
             'imputer': 'Median',
-            'scaler': 'StdScaler',
+            'scaler': 'MinMaxScaler',
             'balancing': 'ClassWeight',
         },
         'params': {
-            'max_depth': 5,
+            'max_depth': 3,
             'learning_rate': 0.05,
-            'n_estimators': 500,
+            'n_estimators': 200,
         },
         'use_gpu': True,
         'source_note': 'Best config taken from preProcessingres/XGBoost/xgboost_tuning_results.txt and preprocessing_results.txt',
@@ -56,14 +57,14 @@ MODEL_SPECS = {
         'output_file': RESULTS_DIR / 'random_forest_shap_report.txt',
         'preprocessing': {
             'imputer': 'KNN',
-            'scaler': 'MinMaxScaler',
-            'balancing': 'SMOTE',
+            'scaler': 'StdScaler',
+            'balancing': 'ClassWeight',
         },
         'params': {
             'n_estimators': 200,
-            'max_depth': 20,
+            'max_depth': 10,
             'max_features': 'sqrt',
-            'min_samples_leaf': 1,
+            'min_samples_leaf': 5,
     },
     'use_gpu': False,
     'source_note': 'Best config taken from preProcessingres/rf/best_preprocessing_config.txt and results_random_forest_grid.txt',
@@ -156,9 +157,9 @@ def fit_and_explain(model_name, spec, X, y):
     cat_cols = X.select_dtypes(include=['object']).columns.tolist()
 
     preprocessor = build_preprocessor(
-    spec['preprocessing']['imputer'],
-    spec['preprocessing']['scaler'],
-    cat_cols,
+        spec['preprocessing']['imputer'],
+        spec['preprocessing']['scaler'],
+        cat_cols,
         num_cols,
     )
 
@@ -174,6 +175,7 @@ def fit_and_explain(model_name, spec, X, y):
     elif spec['preprocessing']['balancing'] == 'SMOTE':
         smote = SMOTE(random_state=42)
         X_train, y_train = smote.fit_resample(X_processed, y)
+    
     model = build_model(model_name, spec['params'], spec['use_gpu'])
     if sample_weights is not None:
         model.fit(X_train, y_train, sample_weight=sample_weights)
@@ -183,6 +185,7 @@ def fit_and_explain(model_name, spec, X, y):
     if spec['use_gpu'] and model_name in {'LightGBM', 'XGBoost'}:
         print(f'{model_name} trained with GPU settings.')
 
+    # Sample for SHAP explainer performance
     sample_size = min(300, X_processed.shape[0])
     if sample_size < X_processed.shape[0]:
         sample_indices = np.random.RandomState(42).choice(X_processed.shape[0], size=sample_size, replace=False)
@@ -192,6 +195,8 @@ def fit_and_explain(model_name, spec, X, y):
 
     explainer = shap.TreeExplainer(model)
     shap_values = explainer.shap_values(X_shap)
+    
+    # Calculate mean absolute SHAP values for ranking (Global Report)
     if isinstance(shap_values, list):
         shap_stack = np.stack(shap_values, axis=0)
         mean_shap = np.mean(np.abs(shap_stack), axis=(0, 2))
@@ -202,16 +207,70 @@ def fit_and_explain(model_name, spec, X, y):
 
     top_indices = np.argsort(mean_shap)[::-1][:20]
 
+    # --- SHAP PLOTTING SECTION ---
+    
+    # Create a subfolder for the current model plots
+    model_plot_dir = RESULTS_DIR / model_name
+    model_plot_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Ensure X_shap_df is a standard DataFrame
+    X_shap_df = pd.DataFrame(X_shap, columns=feature_names)
+
+    # Standardize shap_values format to iterate over classes correctly
+    # (Fixes the issue where some models return a 3D array instead of a list)
+    if isinstance(shap_values, list):
+        num_classes = len(shap_values)
+        class_shap_arrays = shap_values
+    elif getattr(shap_values, 'ndim', 0) == 3:
+        num_classes = shap_values.shape[2]
+        class_shap_arrays = [shap_values[:, :, i] for i in range(num_classes)]
+    else:
+        num_classes = 1
+        class_shap_arrays = [shap_values]
+
+    class_names = ["Non_Injured", "At_Risk", "Injured"]
+
+    # Loop securely over the correctly identified number of classes
+    for class_idx in range(num_classes):
+        # Prevent IndexError in case the model detects unexpected classes
+        class_name = class_names[class_idx] if class_idx < len(class_names) else f"Class_{class_idx}"
+        
+        # Extract the specific 2D matrix for the current class
+        current_shap_values = class_shap_arrays[class_idx]
+        
+        # 1. SUMMARY PLOT (Saved in model subfolder)
+        plt.figure()
+        shap.summary_plot(current_shap_values, X_shap_df, show=False)
+        plt.title(f"Summary Plot: {model_name} - {class_name}")
+        plt.tight_layout()
+        plt.savefig(model_plot_dir / f"{model_name}_class{class_idx}_summary.png")
+        plt.close()
+        print(f"Saved Summary Plot for {model_name} - {class_name}")
+
+        # 2. DEPENDENCE PLOT (Saved in model subfolder)
+        mean_shap_class = np.abs(current_shap_values).mean(axis=0)
+        top_idx_class = np.argsort(mean_shap_class)[-1]
+        top_feature_class = feature_names[top_idx_class]
+        
+        plt.figure()
+        shap.dependence_plot(top_feature_class, current_shap_values, X_shap_df, show=False)
+        plt.title(f"Dependence Plot: {top_feature_class} ({class_name})")
+        plt.tight_layout()
+        plt.savefig(model_plot_dir / f"{model_name}_class{class_idx}_dep_{top_feature_class}.png")
+        plt.close()
+        print(f"Saved Dependence Plot for {top_feature_class} ({class_name})")
+
+    # --- REPORT GENERATION ---
     lines = []
     lines.append(f'MODEL: {model_name}')
     lines.append(f'SOURCE NOTE: {spec["source_note"]}')
     lines.append('PREPROCESSING:')
-    lines.append(f'  Imputer: {spec["preprocessing"]["imputer"]}')
-    lines.append(f'  Scaler: {spec["preprocessing"]["scaler"]}')
-    lines.append(f'  Balancing: {spec["preprocessing"]["balancing"]}')
+    lines.append(f'   Imputer: {spec["preprocessing"]["imputer"]}')
+    lines.append(f'   Scaler: {spec["preprocessing"]["scaler"]}')
+    lines.append(f'   Balancing: {spec["preprocessing"]["balancing"]}')
     lines.append('PARAMETERS:')
     for key, value in spec['params'].items():
-        lines.append(f'  {key}: {value}')
+        lines.append(f'   {key}: {value}')
     lines.append('')
     lines.append('TOP 20 SHAP FEATURES:')
     for rank, idx in enumerate(top_indices, start=1):

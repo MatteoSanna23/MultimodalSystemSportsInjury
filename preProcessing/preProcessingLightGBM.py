@@ -7,7 +7,7 @@ from sklearn.compose import ColumnTransformer
 from sklearn.impute import KNNImputer, SimpleImputer
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, OneHotEncoder
 from sklearn.utils.class_weight import compute_sample_weight
-from sklearn.metrics import f1_score, recall_score
+from sklearn.metrics import fbeta_score, recall_score
 from imblearn.over_sampling import SMOTE
 import warnings
 from lightgbm.basic import LightGBMError
@@ -17,7 +17,7 @@ from pathlib import Path
 warnings.filterwarnings('ignore')
 
 # 1. Data loading
-df = pd.read_csv('multimodal_sports_injury_dataset.csv')
+df = pd.read_csv(r"C:\Users\leozi\Desktop\uni\Magi\AI in Medicine\Multimodalproject\MultimodalSystemSportsInjury\multimodal_sports_injury_dataset.csv")
 X = df.drop(['injury_occurred', 'athlete_id', 'session_id'], axis=1)
 y = df['injury_occurred']
 groups = df['athlete_id']
@@ -42,6 +42,9 @@ OUTPUT_DIR = Path(r"C:\Users\leozi\Desktop\uni\Magi\AI in Medicine\Multimodalpro
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 PREPROCESSING_RESULTS_FILE = OUTPUT_DIR / "lightgbm_best_preprocessing.txt"
 PARAMETER_RESULTS_FILE = OUTPUT_DIR / "lightgbm_best_parameters.txt"
+
+# --- NUOVO PARAMETRO PER FBETA SCORE ---
+BETA = 2.0  # Puoi modificare questo valore (es. 2.0 per dare più peso alla recall, 0.5 per la precision)
 
 # 3. Parameters to test only after finding the best preprocessing combination
 param_grid = {
@@ -93,7 +96,8 @@ def build_preprocessor(num_strategy, scaler, cat_cols, num_cols):
 
 
 def evaluate_combo(imp_obj, scl_obj, bal_name, config=None):
-    macro_f1s, recall_c0s, recall_c1s, recall_c2s = [], [], [], []
+    macro_fbetas, fbeta_c0s, fbeta_c1s, fbeta_c2s = [], [], [], []
+    recall_c0s, recall_c1s, recall_c2s = [], [], []
     config = config or {}
 
     for fold_idx, (train_idx, test_idx) in enumerate(gkf.split(X, y, groups=groups), start=1):
@@ -128,15 +132,27 @@ def evaluate_combo(imp_obj, scl_obj, bal_name, config=None):
             raise RuntimeError('LightGBM did not use GPU as requested.')
 
         y_pred = model.predict(X_test_proc)
-        macro_f1s.append(f1_score(y_test, y_pred, average='macro'))
+        
+        # Calculate Macro FBeta and Individual FBetas
+        macro_fbeta = fbeta_score(y_test, y_pred, beta=BETA, average='macro', zero_division=0)
+        macro_fbetas.append(macro_fbeta)
+        
+        fbetas = fbeta_score(y_test, y_pred, beta=BETA, average=None, labels=[0, 1, 2], zero_division=0)
+        fbeta_c0s.append(fbetas[0])
+        fbeta_c1s.append(fbetas[1])
+        fbeta_c2s.append(fbetas[2])
 
+        # Calculate Recalls
         recalls = recall_score(y_test, y_pred, average=None, labels=[0, 1, 2], zero_division=0)
         recall_c0s.append(recalls[0])
         recall_c1s.append(recalls[1])
         recall_c2s.append(recalls[2])
 
     return {
-        'f1': float(np.mean(macro_f1s)),
+        'fbeta_macro': float(np.mean(macro_fbetas)),
+        'fbeta_c0': float(np.mean(fbeta_c0s)),
+        'fbeta_c1': float(np.mean(fbeta_c1s)),
+        'fbeta_c2': float(np.mean(fbeta_c2s)),
         'recall_c0': float(np.mean(recall_c0s)),
         'recall_c1': float(np.mean(recall_c1s)),
         'recall_c2': float(np.mean(recall_c2s)),
@@ -150,10 +166,10 @@ def format_config(config, keys):
 # 4. Phase 1: select the best preprocessing and balancing combination
 print("LightGBM GPU mode enabled.")
 with open(PREPROCESSING_RESULTS_FILE, "w", encoding="utf-8") as preprocessing_file:
-    preprocessing_file.write("PHASE 1 - PREPROCESSING SELECTION\n")
-    preprocessing_file.write("Imputer | Scaler | Balancing || Macro F1 | Recall C0 | Recall C1 | Recall C2\n")
-    preprocessing_file.write("-" * 100 + "\n")
-    print("Starting LightGBM preprocessing selection...\n")
+    preprocessing_file.write(f"PHASE 1 - PREPROCESSING SELECTION (OPTIMIZING FOR CLASS 2 FBETA-SCORE, Beta={BETA})\n")
+    preprocessing_file.write("Imputer | Scaler | Balancing || FBeta C2 | Recall C2 | Macro FBeta | FBeta C0 | FBeta C1 \n")
+    preprocessing_file.write("-" * 120 + "\n")
+    print(f"Starting LightGBM preprocessing selection (Optimizing for Class 2 FBeta, Beta={BETA})...\n")
 
     best_preproc = {
         'score': -np.inf,
@@ -178,17 +194,21 @@ with open(PREPROCESSING_RESULTS_FILE, "w", encoding="utf-8") as preprocessing_fi
                     continue
 
                 res_str = (
-                    f"{combo_name} || F1: {metrics['f1']:.3f} | "
+                    f"{combo_name} || FBeta_2 (TARGET): {metrics['fbeta_c2']:.3f} | "
+                    f"Rec2: {metrics['recall_c2']:.3f} | "
+                    f"FBeta_Macro: {metrics['fbeta_macro']:.3f} | "
+                    f"FBeta_0: {metrics['fbeta_c0']:.3f} | "
+                    f"FBeta_1: {metrics['fbeta_c1']:.3f}\n"
                     f"Rec0: {metrics['recall_c0']:.3f} | "
-                    f"Rec1: {metrics['recall_c1']:.3f} | "
-                    f"Rec2: {metrics['recall_c2']:.3f}\n"
+                    f"Rec1: {metrics['recall_c1']:.3f}\n"
                 )
                 preprocessing_file.write(res_str)
                 print(res_str.strip())
 
-                if metrics['f1'] > best_preproc['score']:
+                # Modifica chiave: ora la selezione si basa esclusivamente su FBeta_C2
+                if metrics['fbeta_c2'] > best_preproc['score']:
                     best_preproc = {
-                        'score': metrics['f1'],
+                        'score': metrics['fbeta_c2'],
                         'imp_name': imp_name,
                         'imp_obj': imp_obj,
                         'scl_name': scl_name,
@@ -196,36 +216,25 @@ with open(PREPROCESSING_RESULTS_FILE, "w", encoding="utf-8") as preprocessing_fi
                         'bal_name': bal_name,
                         'metrics': metrics,
                     }
-                    print(
-                        f"New best preprocessing: {imp_name} | {scl_name} | {bal_name} || "
-                        f"F1: {metrics['f1']:.3f} | Rec0: {metrics['recall_c0']:.3f} | "
-                        f"Rec1: {metrics['recall_c1']:.3f} | Rec2: {metrics['recall_c2']:.3f}"
-                    )
 
-    preprocessing_file.write("-" * 100 + "\n")
+    preprocessing_file.write("-" * 120 + "\n")
     if best_preproc['imp_name'] is not None:
         best_preproc_name = f"{best_preproc['imp_name']} | {best_preproc['scl_name']} | {best_preproc['bal_name']}"
         preprocessing_file.write(
-            f"BEST PREPROCESSING: {best_preproc_name} || F1: {best_preproc['score']:.3f} | "
-            f"Rec0: {best_preproc['metrics']['recall_c0']:.3f} | "
-            f"Rec1: {best_preproc['metrics']['recall_c1']:.3f} | "
-            f"Rec2: {best_preproc['metrics']['recall_c2']:.3f}\n"
+            f"BEST PREPROCESSING FOR CLASS 2: {best_preproc_name} || FBeta_2: {best_preproc['score']:.3f} | "
+            f"Recall_2: {best_preproc['metrics']['recall_c2']:.3f} | "
+            f"FBeta_Macro: {best_preproc['metrics']['fbeta_macro']:.3f}\n"
         )
-        print(
-            f"\nBest preprocessing found: {best_preproc_name} || F1: {best_preproc['score']:.3f} | "
-            f"Rec0: {best_preproc['metrics']['recall_c0']:.3f} | "
-            f"Rec1: {best_preproc['metrics']['recall_c1']:.3f} | "
-            f"Rec2: {best_preproc['metrics']['recall_c2']:.3f}"
-        )
+        print(f"\nBest preprocessing found for Class 2: {best_preproc_name} || FBeta_2: {best_preproc['score']:.3f}")
     else:
         preprocessing_file.write("No valid preprocessing configuration was found.\n")
         print("\nNo valid preprocessing configuration was found.")
 
 with open(PARAMETER_RESULTS_FILE, "w", encoding="utf-8") as parameter_file:
     # 5. Phase 2: parameter search on the best preprocessing combination
-    parameter_file.write("PHASE 2 - PARAMETER SEARCH ON BEST PREPROCESSING\n")
-    parameter_file.write("Params || Macro F1 | Recall C0 | Recall C1 | Recall C2\n")
-    parameter_file.write("-" * 100 + "\n")
+    parameter_file.write(f"PHASE 2 - PARAMETER SEARCH (OPTIMIZING FOR CLASS 2 FBETA-SCORE, Beta={BETA})\n")
+    parameter_file.write("Params || FBeta C2 | Recall C2 | Macro FBeta | FBeta C0 | FBeta C1\n")
+    parameter_file.write("-" * 120 + "\n")
 
     best_param_result = {
         'score': -np.inf,
@@ -234,7 +243,7 @@ with open(PARAMETER_RESULTS_FILE, "w", encoding="utf-8") as parameter_file:
     }
 
     if best_preproc['imp_obj'] is not None:
-        print("\nStarting parameter grid search on the best preprocessing configuration...\n")
+        print("\nStarting parameter grid search focusing on Class 2...\n")
 
         for config in grid_configs:
             try:
@@ -252,37 +261,35 @@ with open(PARAMETER_RESULTS_FILE, "w", encoding="utf-8") as parameter_file:
 
             config_str = format_config(config, param_grid.keys())
             res_str = (
-                f"{config_str} || F1: {metrics['f1']:.3f} | "
+                f"{config_str} || FBeta_2 (TARGET): {metrics['fbeta_c2']:.3f} | "
+                f"Rec2: {metrics['recall_c2']:.3f} | "
+                f"FBeta_Macro: {metrics['fbeta_macro']:.3f} | "
+                f"FBeta_0: {metrics['fbeta_c0']:.3f} | "
+                f"FBeta_1: {metrics['fbeta_c1']:.3f}\n"
                 f"Rec0: {metrics['recall_c0']:.3f} | "
-                f"Rec1: {metrics['recall_c1']:.3f} | "
-                f"Rec2: {metrics['recall_c2']:.3f}\n"
+                f"Rec1: {metrics['recall_c1']:.3f}\n"
             )
+
             parameter_file.write(res_str)
             print(res_str.strip())
 
-            if metrics['f1'] > best_param_result['score']:
+            # Selezione parametri basata su FBeta_C2
+            if metrics['fbeta_c2'] > best_param_result['score']:
                 best_param_result = {
-                    'score': metrics['f1'],
+                    'score': metrics['fbeta_c2'],
                     'combo_name': config_str,
                     'metrics': metrics,
                 }
 
-        parameter_file.write("-" * 100 + "\n")
+        parameter_file.write("-" * 120 + "\n")
         if best_param_result['combo_name'] is not None:
             parameter_file.write(
-                f"BEST PARAMS ON BEST PREPROCESSING: {best_param_result['combo_name']} || "
-                f"F1: {best_param_result['score']:.3f} | "
-                f"Rec0: {best_param_result['metrics']['recall_c0']:.3f} | "
-                f"Rec1: {best_param_result['metrics']['recall_c1']:.3f} | "
-                f"Rec2: {best_param_result['metrics']['recall_c2']:.3f}\n"
+                f"BEST PARAMS FOR CLASS 2: {best_param_result['combo_name']} || "
+                f"FBeta_2: {best_param_result['score']:.3f} | "
+                f"Recall_2: {best_param_result['metrics']['recall_c2']:.3f} | "
+                f"FBeta_Macro: {best_param_result['metrics']['fbeta_macro']:.3f}\n"
             )
-            print(
-                f"\nBest parameters on best preprocessing: {best_param_result['combo_name']} || "
-                f"F1: {best_param_result['score']:.3f} | "
-                f"Rec0: {best_param_result['metrics']['recall_c0']:.3f} | "
-                f"Rec1: {best_param_result['metrics']['recall_c1']:.3f} | "
-                f"Rec2: {best_param_result['metrics']['recall_c2']:.3f}"
-            )
+            print(f"\nBest parameters found for Class 2: {best_param_result['combo_name']} || FBeta_2: {best_param_result['score']:.3f}")
         else:
             parameter_file.write("No valid parameter configuration was found.\n")
             print("\nNo valid parameter configuration was found.")
