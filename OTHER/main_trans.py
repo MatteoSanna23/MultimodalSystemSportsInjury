@@ -112,7 +112,7 @@ def run_cv_training(seq_length, hidden_dim, epochs, use_early_stopping=False, sa
         
         # 6. Model Init
         input_dim = X_train_t.shape[2]
-        model = InjuryPredictionTransformer(input_dim=input_dim, d_model=32, nhead=4, num_layers=1).to(DEVICE)
+        model = InjuryPredictionTransformer(input_dim=input_dim, d_model=input_dim, nhead=4, num_layers=1).to(DEVICE)
         
         criterion = nn.CrossEntropyLoss(weight=class_weights_tensor)
         optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
