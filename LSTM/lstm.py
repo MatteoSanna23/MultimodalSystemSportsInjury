@@ -1,3 +1,6 @@
+import torch
+import torch.nn as nn
+
 class InjuryPredictionLSTM(nn.Module):
     def __init__(self, input_dim, hidden_dim, num_layers=1, output_dim=3, dropout_rate=0.3):
         super(InjuryPredictionLSTM, self).__init__()
