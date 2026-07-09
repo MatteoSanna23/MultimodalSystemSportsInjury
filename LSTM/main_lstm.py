@@ -42,7 +42,7 @@ print(f"Using device: {DEVICE}")
 # DATA LOADING
 # ==========================================
 print("Loading data...")
-df = pd.read_csv('multimodal_sports_injury_dataset.csv')
+df = pd.read_csv(r"C:\Users\leozi\Desktop\uni\Magi\AI in Medicine\Multimodalproject\MultimodalSystemSportsInjury\multimodal_sports_injury_dataset.csv")
 X = df.drop(['injury_occurred'], axis=1) 
 y = df['injury_occurred']
 groups = df['athlete_id']
