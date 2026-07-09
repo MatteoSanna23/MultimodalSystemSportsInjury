@@ -14,11 +14,16 @@ from sklearn.metrics import fbeta_score, recall_score
 import warnings
 import copy
 
-warnings.warnings.filterwarnings('ignore')
+warnings.filterwarnings('ignore')
+
+import sys
+import os
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # 1. Import your custom modules
-from model import InjuryPredictionTransformer
 from LSTM.sliding_windows import create_sliding_windows, SportsInjuryDataset
+from model import InjuryPredictionTransformer
 
 # ==========================================
 # GLOBAL CONFIGURATIONS
