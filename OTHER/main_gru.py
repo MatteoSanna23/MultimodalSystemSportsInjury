@@ -23,7 +23,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # 1. Import your custom modules
 from LSTM.sliding_windows import create_sliding_windows, SportsInjuryDataset
-from model import InjuryPredictionTransformer
+from model import InjuryPredictionGRU
 
 # ==========================================
 # GLOBAL CONFIGURATIONS
@@ -34,7 +34,7 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Grid Search Parameters
 GRID_SEQ_LENGTHS = [3, 5, 7]
-GRID_HIDDEN_DIMS = [32, 64] # Will be mapped dynamically to d_model (divisible by nhead=4)
+GRID_HIDDEN_DIMS = [32, 64]
 GRID_EPOCHS = 15
 
 # Mega Training Parameters
@@ -47,7 +47,7 @@ print(f"Using device: {DEVICE}")
 # DATA LOADING
 # ==========================================
 print("Loading data...")
-df = pd.read_csv("..//multimodal_sports_injury_dataset.csv")
+df = pd.read_csv(r"C:\Users\leozi\Desktop\uni\Magi\AI in Medicine\Multimodalproject\MultimodalSystemSportsInjury\multimodal_sports_injury_dataset.csv")
 X = df.drop(['injury_occurred'], axis=1) 
 y = df['injury_occurred']
 groups = df['athlete_id']
@@ -57,8 +57,8 @@ groups = df['athlete_id']
 # ==========================================
 def run_cv_training(seq_length, hidden_dim, epochs, use_early_stopping=False, save_best_model=False):
     """
-    Executes the 5-fold Subject-Wise CV for a specific Transformer configuration.
-    The hidden_dim parameter dictates the d_model size.
+    Executes the 5-fold Subject-Wise CV for a specific GRU configuration.
+    Returns the mean F2-Score for Class 2.
     """
     gkf = GroupKFold(n_splits=5)
     
@@ -110,9 +110,9 @@ def run_cv_training(seq_length, hidden_dim, epochs, use_early_stopping=False, sa
         weights = compute_class_weight('balanced', classes=classes, y=y_train_t.numpy())
         class_weights_tensor = torch.tensor(weights, dtype=torch.float32).to(DEVICE)
         
-        # 6. Model Init (hidden_dim maps dynamically to d_model, divisible by nhead=4)
+        # 6. Model Init (Fixed hidden_dim mapping)
         input_dim = X_train_t.shape[2]
-        model = InjuryPredictionTransformer(input_dim=input_dim, d_model=hidden_dim, nhead=4, num_layers=1).to(DEVICE)
+        model = InjuryPredictionGRU(input_dim=input_dim, hidden_dim=hidden_dim, num_layers=1, dropout_rate=0.3).to(DEVICE)
         
         criterion = nn.CrossEntropyLoss(weight=class_weights_tensor)
         optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
@@ -174,12 +174,12 @@ def run_cv_training(seq_length, hidden_dim, epochs, use_early_stopping=False, sa
     mean_rec = np.mean(fold_rec_c2)
     
     if save_best_model and best_model_weights is not None:
-        torch.save(best_model_weights, "best_transformer_mega_model.pth")
+        torch.save(best_model_weights, "best_gru_mega_model.pth")
         
         # Save Mega Training TXT Report
         report = [
             "="*70,
-            f"TRANSFORMER MEGA TRAINING REPORT (Time Steps: {seq_length}, d_model: {hidden_dim})",
+            f"GRU MEGA TRAINING REPORT (Time Steps: {seq_length}, Hidden: {hidden_dim})",
             "="*70,
             "FOLD-BY-FOLD RESULTS (Class 2):"
         ]
@@ -191,9 +191,9 @@ def run_cv_training(seq_length, hidden_dim, epochs, use_early_stopping=False, sa
             f"Mean F2_C2:     {mean_f2:.4f} +/- {np.std(fold_f2_c2):.4f}",
             f"Mean Recall_C2: {mean_rec:.4f} +/- {np.std(fold_rec_c2):.4f}",
             "-"*70,
-            f"Best Model Saved: best_transformer_mega_model.pth (from Fold {best_fold_identifier})"
+            f"Best Model Saved: best_gru_mega_model.pth (from Fold {best_fold_identifier})"
         ])
-        with open("transformer_mega_training_report.txt", "w") as f:
+        with open("gru_mega_training_report.txt", "w") as f:
             f.write("\n".join(report))
             
     return mean_f2, mean_rec
@@ -202,18 +202,18 @@ def run_cv_training(seq_length, hidden_dim, epochs, use_early_stopping=False, sa
 # PHASE 1: GRID SEARCH
 # ==========================================
 print("\n" + "="*70)
-print(f"PHASE 1: TRANSFORMER GRID SEARCH (Epochs: {GRID_EPOCHS})")
+print(f"PHASE 1: GRU GRID SEARCH (Epochs: {GRID_EPOCHS})")
 print("="*70)
 
 best_grid_f2 = -np.inf
 best_grid_config = {}
 
-with open("transformer_grid_search_results.txt", "w") as f:
-    f.write("TRANSFORMER GRID SEARCH RESULTS\n" + "-"*50 + "\n")
+with open("gru_grid_search_results.txt", "w") as f:
+    f.write("GRU GRID SEARCH RESULTS\n" + "-"*50 + "\n")
     
     for seq in GRID_SEQ_LENGTHS:
         for hid in GRID_HIDDEN_DIMS:
-            print(f"\nTesting Config -> Seq_Length: {seq} | d_model (Hidden): {hid}")
+            print(f"\nTesting Config -> Seq_Length: {seq} | Hidden_Dim: {hid}")
             
             mean_f2, mean_rec = run_cv_training(
                 seq_length=seq, 
@@ -223,7 +223,7 @@ with open("transformer_grid_search_results.txt", "w") as f:
                 save_best_model=False
             )
             
-            res_str = f"Seq:{seq} | d_model:{hid} || Mean F2_C2: {mean_f2:.4f} | Mean Rec_C2: {mean_rec:.4f}"
+            res_str = f"Seq:{seq} | Hidden:{hid} || Mean F2_C2: {mean_f2:.4f} | Mean Rec_C2: {mean_rec:.4f}"
             print(f"Result: {res_str}")
             f.write(res_str + "\n")
             
@@ -241,7 +241,7 @@ print(f"\nPhase 1 Complete! Best Configuration: {best_grid_config}")
 # ==========================================
 print("\n" + "="*70)
 print(f"PHASE 2: MEGA TRAINING (Epochs: {MEGA_EPOCHS}, Early Stopping: {EARLY_STOPPING_PATIENCE})")
-print(f"Using Optimal Config: Seq_Length: {best_grid_config['seq_length']}, d_model: {best_grid_config['hidden_dim']}")
+print(f"Using Optimal Config: Seq_Length: {best_grid_config['seq_length']}, Hidden_Dim: {best_grid_config['hidden_dim']}")
 print("="*70)
 
 run_cv_training(
@@ -252,4 +252,4 @@ run_cv_training(
     save_best_model=True
 )
 
-print("\nProcess fully completed! Check 'transformer_grid_search_results.txt' and 'transformer_mega_training_report.txt'.")
+print("\nProcess fully completed! Check 'gru_grid_search_results.txt' and 'gru_mega_training_report.txt'.")
