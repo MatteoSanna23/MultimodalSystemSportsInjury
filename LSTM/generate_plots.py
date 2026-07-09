@@ -24,7 +24,7 @@ from torch.utils.data import DataLoader
 SEQ_LENGTH = 7              # Using 7 days, the winning config from your Grid Search
 HIDDEN_DIM = 32             # The winning config
 MODEL_WEIGHTS_PATH = "best_lstm_mega_model.pth"
-DATASET_PATH = "multimodal_sports_injury_dataset.csv"
+DATASET_PATH = "../multimodal_sports_injury_dataset.csv"
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 print(f"Starting plot generation on device: {DEVICE}")
