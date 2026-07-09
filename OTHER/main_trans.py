@@ -19,7 +19,7 @@ warnings.filterwarnings('ignore')
 # 1. Import your custom modules
 from model import InjuryPredictionTransformer
 # model = InjuryPredictionTransformer(input_dim=input_dim, d_model=32, nhead=4, num_layers=1).to(DEVICE)
-from sliding_windows import create_sliding_windows, SportsInjuryDataset
+from LSTM.sliding_windows import create_sliding_windows, SportsInjuryDataset
 
 # ==========================================
 # GLOBAL CONFIGURATIONS
@@ -43,7 +43,7 @@ print(f"Using device: {DEVICE}")
 # DATA LOADING
 # ==========================================
 print("Loading data...")
-df = pd.read_csv(r"C:\Users\leozi\Desktop\uni\Magi\AI in Medicine\Multimodalproject\MultimodalSystemSportsInjury\multimodal_sports_injury_dataset.csv")
+df = pd.read_csv("..//multimodal_sports_injury_dataset.csv")
 X = df.drop(['injury_occurred'], axis=1) 
 y = df['injury_occurred']
 groups = df['athlete_id']
