@@ -4,7 +4,7 @@ Imputer | Scaler | Balancing || Macro F2 | F2 C0 | F2 C1 | F2 C2 | Rec0 | Rec1 |
 ------------------------------------------------------------------------------------------------------------------------------------------------------
 KNN | StdScaler | ClassWeight || Macro F2: 0.501 | F2_C0: 0.700 | F2_C1: 0.164 | F2_C2: 0.638 | Rec0: 0.697 | Rec1: 0.155 | Rec2: 0.700
 KNN | StdScaler | SMOTE || Macro F2: 0.475 | F2_C0: 0.819 | F2_C1: 0.058 | F2_C2: 0.547 | Rec0: 0.858 | Rec1: 0.048 | Rec2: 0.558
-KNN | MinMaxScaler | ClassWeight || Macro F2: 0.498 | F2_C0: 0.697 | F2_C1: 0.163 | F2_C2: 0.633 | Rec0: 0.694 | Rec1: 0.153 | Rec2: 0.695
+KNN | MinMaxScaler | ClassWeight || Macro F2: 0.497 | F2_C0: 0.695 | F2_C1: 0.160 | F2_C2: 0.636 | Rec0: 0.693 | Rec1: 0.151 | Rec2: 0.698
 KNN | MinMaxScaler | SMOTE || Macro F2: 0.485 | F2_C0: 0.782 | F2_C1: 0.101 | F2_C2: 0.574 | Rec0: 0.805 | Rec1: 0.088 | Rec2: 0.599
 Median | StdScaler | ClassWeight || Macro F2: 0.504 | F2_C0: 0.697 | F2_C1: 0.180 | F2_C2: 0.635 | Rec0: 0.694 | Rec1: 0.170 | Rec2: 0.697
 Median | StdScaler | SMOTE || Macro F2: 0.476 | F2_C0: 0.813 | F2_C1: 0.067 | F2_C2: 0.547 | Rec0: 0.849 | Rec1: 0.057 | Rec2: 0.559
@@ -12,7 +12,7 @@ Median | MinMaxScaler | ClassWeight || Macro F2: 0.505 | F2_C0: 0.702 | F2_C1: 0
 Median | MinMaxScaler | SMOTE || Macro F2: 0.481 | F2_C0: 0.778 | F2_C1: 0.093 | F2_C2: 0.572 | Rec0: 0.801 | Rec1: 0.081 | Rec2: 0.599
 Native_XGB | StdScaler | ClassWeight || Macro F2: 0.501 | F2_C0: 0.698 | F2_C1: 0.172 | F2_C2: 0.635 | Rec0: 0.695 | Rec1: 0.162 | Rec2: 0.696
 Native_XGB | StdScaler | SMOTE || FAILED (ValueError)
-Native_XGB | MinMaxScaler | ClassWeight || Macro F2: 0.501 | F2_C0: 0.695 | F2_C1: 0.170 | F2_C2: 0.638 | Rec0: 0.692 | Rec1: 0.160 | Rec2: 0.701
+Native_XGB | MinMaxScaler | ClassWeight || Macro F2: 0.501 | F2_C0: 0.696 | F2_C1: 0.169 | F2_C2: 0.637 | Rec0: 0.693 | Rec1: 0.160 | Rec2: 0.700
 Native_XGB | MinMaxScaler | SMOTE || FAILED (ValueError)
 
 ============================================================

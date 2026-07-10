@@ -1,0 +1,8 @@
+PHASE 3 - FINAL MODEL CALIBRATION (Method: Sigmoid / Platt Scaling)
+------------------------------------------------------------------------------------------------------------------------
+Base Configuration: {'learning_rate': 0.05, 'max_depth': 3, 'n_estimators': 200}
+Base Preprocessing: Median | MinMaxScaler | ClassWeight
+
+Pre-Calibration Log Loss (on Isolated Fold):  0.9090
+Post-Calibration Log Loss (on Isolated Fold): 0.7544
+-> A lower Log Loss indicates that output probabilities are more aligned with clinical reality.

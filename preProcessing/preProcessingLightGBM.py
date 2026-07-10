@@ -7,11 +7,15 @@ from sklearn.compose import ColumnTransformer
 from sklearn.impute import KNNImputer, SimpleImputer
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, OneHotEncoder
 from sklearn.utils.class_weight import compute_sample_weight
-from sklearn.metrics import fbeta_score, recall_score
+from sklearn.metrics import fbeta_score, recall_score, log_loss
+from sklearn.calibration import CalibratedClassifierCV
 from imblearn.over_sampling import SMOTE
 import warnings
 from lightgbm.basic import LightGBMError
 from pathlib import Path
+import joblib
+import matplotlib.pyplot as plt
+from sklearn.calibration import CalibrationDisplay
 
 # Suppress verbose LightGBM logs to keep the terminal clean.
 warnings.filterwarnings('ignore')
@@ -42,6 +46,11 @@ OUTPUT_DIR = Path(r"C:\Users\leozi\Desktop\uni\Magi\AI in Medicine\Multimodalpro
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 PREPROCESSING_RESULTS_FILE = OUTPUT_DIR / "lightgbm_best_preprocessing.txt"
 PARAMETER_RESULTS_FILE = OUTPUT_DIR / "lightgbm_best_parameters.txt"
+
+# --- NUOVA DIRECTORY PER LA CALIBRAZIONE ---
+CALIB_DIR = OUTPUT_DIR / "calibration_results"
+CALIB_DIR.mkdir(parents=True, exist_ok=True)
+CALIB_RESULTS_FILE = CALIB_DIR / "lightgbm_calibration_metrics.txt"
 
 # --- NUOVO PARAMETRO PER FBETA SCORE ---
 BETA = 2.0  # Puoi modificare questo valore (es. 2.0 per dare più peso alla recall, 0.5 per la precision)
@@ -205,7 +214,6 @@ with open(PREPROCESSING_RESULTS_FILE, "w", encoding="utf-8") as preprocessing_fi
                 preprocessing_file.write(res_str)
                 print(res_str.strip())
 
-                # Modifica chiave: ora la selezione si basa esclusivamente su FBeta_C2
                 if metrics['fbeta_c2'] > best_preproc['score']:
                     best_preproc = {
                         'score': metrics['fbeta_c2'],
@@ -230,17 +238,18 @@ with open(PREPROCESSING_RESULTS_FILE, "w", encoding="utf-8") as preprocessing_fi
         preprocessing_file.write("No valid preprocessing configuration was found.\n")
         print("\nNo valid preprocessing configuration was found.")
 
+best_param_result = {
+    'score': -np.inf,
+    'combo_name': None,
+    'metrics': None,
+    'config': None
+}
+
 with open(PARAMETER_RESULTS_FILE, "w", encoding="utf-8") as parameter_file:
     # 5. Phase 2: parameter search on the best preprocessing combination
     parameter_file.write(f"PHASE 2 - PARAMETER SEARCH (OPTIMIZING FOR CLASS 2 FBETA-SCORE, Beta={BETA})\n")
     parameter_file.write("Params || FBeta C2 | Recall C2 | Macro FBeta | FBeta C0 | FBeta C1\n")
     parameter_file.write("-" * 120 + "\n")
-
-    best_param_result = {
-        'score': -np.inf,
-        'combo_name': None,
-        'metrics': None,
-    }
 
     if best_preproc['imp_obj'] is not None:
         print("\nStarting parameter grid search focusing on Class 2...\n")
@@ -273,12 +282,12 @@ with open(PARAMETER_RESULTS_FILE, "w", encoding="utf-8") as parameter_file:
             parameter_file.write(res_str)
             print(res_str.strip())
 
-            # Selezione parametri basata su FBeta_C2
             if metrics['fbeta_c2'] > best_param_result['score']:
                 best_param_result = {
                     'score': metrics['fbeta_c2'],
                     'combo_name': config_str,
                     'metrics': metrics,
+                    'config': config
                 }
 
         parameter_file.write("-" * 120 + "\n")
@@ -293,3 +302,153 @@ with open(PARAMETER_RESULTS_FILE, "w", encoding="utf-8") as parameter_file:
         else:
             parameter_file.write("No valid parameter configuration was found.\n")
             print("\nNo valid parameter configuration was found.")
+
+
+# =====================================================================
+# 6. PHASE 3: FINAL MODEL CALIBRATION (ISOLATED VALIDATION FOLD)
+# =====================================================================
+if best_param_result['config'] is not None and best_preproc['imp_obj'] is not None:
+    print("\n" + "="*60)
+    print("PHASE 3 - FINAL MODEL CALIBRATION")
+    print("="*60)
+    
+    from imblearn.pipeline import Pipeline as ImbPipeline
+    from sklearn.model_selection import PredefinedSplit
+    
+    with open(CALIB_RESULTS_FILE, "w", encoding="utf-8") as calib_file:
+        calib_file.write(f"PHASE 3 - FINAL MODEL CALIBRATION (Method: Sigmoid / Platt Scaling)\n")
+        calib_file.write("-" * 120 + "\n")
+        
+        best_config = best_param_result['config'].copy()
+        
+        # Extract a single split (1 fold) from GroupKFold
+        train_idx, calib_idx = next(gkf.split(X, y, groups=groups))
+        
+        # Select the data
+        X_train_full, X_calib = X.iloc[train_idx], X.iloc[calib_idx]
+        y_train_full, y_calib = y.iloc[train_idx], y.iloc[calib_idx]
+        
+        # Combine the data, resetting the index for PredefinedSplit
+        X_combined = pd.concat([X_train_full, X_calib], axis=0).reset_index(drop=True)
+        y_combined = pd.concat([y_train_full, y_calib], axis=0).reset_index(drop=True)
+        
+        num_cols = X.select_dtypes(include=[np.number]).columns.tolist()
+        cat_cols = X.select_dtypes(include=['object']).columns.tolist()
+        
+        # 1. End-to-End Pipeline Construction
+        steps = []
+        
+        # A) Preprocessor
+        preprocessor = build_preprocessor(
+            best_preproc['imp_obj'], 
+            best_preproc['scl_obj'], 
+            cat_cols, 
+            num_cols
+        )
+        steps.append(('preprocessor', preprocessor))
+        
+        # B) Balancing
+        if best_preproc['bal_name'] == 'SMOTE':
+            steps.append(('smote', SMOTE(random_state=42)))
+            
+        # C) Base Model (Build first, then update class_weight to avoid dict collision)
+        base_model = build_model(USE_GPU, **best_config)
+        
+        if best_preproc['bal_name'] == 'ClassWeight':
+            base_model.set_params(class_weight='balanced')
+            
+        steps.append(('model', base_model))
+        
+        pipeline = ImbPipeline(steps)
+        
+        # 2. Manual training for Pre-Calibration evaluation
+        print("Training the base model on 80% of the data for pre-calibration testing...")
+        pipeline.fit(X_train_full, y_train_full)
+        y_calib_proba_pre = pipeline.predict_proba(X_calib)
+        log_loss_pre = log_loss(y_calib, y_calib_proba_pre)
+        
+        # 3. PredefinedSplit Setup
+        # An array where -1 indicates training data and 0 indicates validation data
+        test_fold = np.full(len(X_combined), -1)
+        test_fold[len(X_train_full):] = 0 
+        ps = PredefinedSplit(test_fold)
+        
+        # 4. Calibration (Bypass the cv='prefit' bug)
+        # Pass the entire pipeline: CalibratedClassifierCV will use PredefinedSplit to 
+        # train the pipeline safely on fold -1 and calibrate it on fold 0.
+        print("Calibrating on the isolated 20% using PredefinedSplit...")
+        calibrated_model = CalibratedClassifierCV(
+            estimator=pipeline, 
+            method='sigmoid', 
+            cv=ps
+        )
+        calibrated_model.fit(X_combined, y_combined)
+        
+        # 5. Post-Calibration Evaluation
+        y_calib_proba_post = calibrated_model.predict_proba(X_calib)
+        log_loss_post = log_loss(y_calib, y_calib_proba_post)
+        
+        res_str = (
+            f"Base Configuration: {best_param_result['combo_name']}\n"
+            f"Base Preprocessing: {best_preproc['imp_name']} | {best_preproc['scl_name']} | {best_preproc['bal_name']}\n\n"
+            f"Pre-Calibration Log Loss (on Isolated Fold):  {log_loss_pre:.4f}\n"
+            f"Post-Calibration Log Loss (on Isolated Fold): {log_loss_post:.4f}\n"
+            f"-> A lower Log Loss indicates that output probabilities are more aligned with clinical reality.\n"
+        )
+        
+        calib_file.write(res_str)
+        print(res_str)
+        
+        # 6. Saving Artifacts for Production
+        joblib.dump(pipeline, CALIB_DIR / "final_base_pipeline.pkl")
+        joblib.dump(calibrated_model, CALIB_DIR / "final_calibrated_pipeline.pkl")
+        
+        print(f"Models successfully saved to:\n{CALIB_DIR}")
+
+        print("\n" + "="*60)
+print("PHASE 4 - CALIBRATION VISUALIZATION")
+print("="*60)
+print("Generating calibration curves for Class 2 (High Risk)...")
+
+# We focus on Class 2 as it is the primary clinical target
+target_class_idx = 2
+
+# Binarize the labels for Class 2 specifically (1 if Class 2, 0 otherwise)
+y_calib_binary = (y_calib == target_class_idx).astype(int)
+
+# Extract probabilities specifically for Class 2
+y_calib_proba_pre_c2 = y_calib_proba_pre[:, target_class_idx]
+y_calib_proba_post_c2 = y_calib_proba_post[:, target_class_idx]
+
+fig, ax = plt.subplots(figsize=(8, 8))
+
+# Plot Pre-Calibration
+CalibrationDisplay.from_predictions(
+    y_calib_binary, 
+    y_calib_proba_pre_c2, 
+    n_bins=10, 
+    name="Pre-Calibration (Base Pipeline)", 
+    ax=ax, 
+    color='red',
+    linestyle='--'
+)
+
+# Plot Post-Calibration
+CalibrationDisplay.from_predictions(
+    y_calib_binary, 
+    y_calib_proba_post_c2, 
+    n_bins=10, 
+    name="Post-Calibration (Sigmoid)", 
+    ax=ax, 
+    color='green'
+)
+
+ax.set_title("Calibration Curve (Reliability Diagram) - Class 2 (High Risk)")
+ax.set_xlabel("Mean Predicted Probability")
+ax.set_ylabel("Fraction of Positives (True Frequency)")
+plt.grid(True, linestyle=':', alpha=0.7)
+
+# Save the plot
+plot_path = CALIB_DIR / "calibration_curve_class2.png"
+plt.savefig(plot_path, dpi=300, bbox_inches='tight')
+print(f"Calibration plot saved successfully to:\n{plot_path}")

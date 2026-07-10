@@ -9,10 +9,10 @@ max_depth=3 | learning_rate=0.01 | n_estimators=500 || FBeta_2 (TARGET): 0.709 |
 Rec0: 0.385 | Rec1: 0.348
 max_depth=5 | learning_rate=0.01 | n_estimators=200 || FBeta_2 (TARGET): 0.703 | Rec2: 0.880 | FBeta_Macro: 0.487 | FBeta_0: 0.446 | FBeta_1: 0.313
 Rec0: 0.407 | Rec1: 0.342
-max_depth=5 | learning_rate=0.01 | n_estimators=300 || FBeta_2 (TARGET): 0.704 | Rec2: 0.877 | FBeta_Macro: 0.487 | FBeta_0: 0.461 | FBeta_1: 0.294
-Rec0: 0.423 | Rec1: 0.318
-max_depth=5 | learning_rate=0.01 | n_estimators=500 || FBeta_2 (TARGET): 0.706 | Rec2: 0.867 | FBeta_Macro: 0.494 | FBeta_0: 0.497 | FBeta_1: 0.279
-Rec0: 0.461 | Rec1: 0.296
+max_depth=5 | learning_rate=0.01 | n_estimators=300 || FBeta_2 (TARGET): 0.704 | Rec2: 0.877 | FBeta_Macro: 0.486 | FBeta_0: 0.461 | FBeta_1: 0.294
+Rec0: 0.423 | Rec1: 0.317
+max_depth=5 | learning_rate=0.01 | n_estimators=500 || FBeta_2 (TARGET): 0.705 | Rec2: 0.867 | FBeta_Macro: 0.494 | FBeta_0: 0.496 | FBeta_1: 0.279
+Rec0: 0.460 | Rec1: 0.296
 max_depth=3 | learning_rate=0.05 | n_estimators=200 || FBeta_2 (TARGET): 0.709 | Rec2: 0.871 | FBeta_Macro: 0.494 | FBeta_0: 0.473 | FBeta_1: 0.300
 Rec0: 0.435 | Rec1: 0.325
 max_depth=3 | learning_rate=0.05 | n_estimators=300 || FBeta_2 (TARGET): 0.710 | Rec2: 0.863 | FBeta_Macro: 0.500 | FBeta_0: 0.499 | FBeta_1: 0.290
@@ -23,8 +23,8 @@ max_depth=5 | learning_rate=0.05 | n_estimators=200 || FBeta_2 (TARGET): 0.703 |
 Rec0: 0.525 | Rec1: 0.254
 max_depth=5 | learning_rate=0.05 | n_estimators=300 || FBeta_2 (TARGET): 0.692 | Rec2: 0.811 | FBeta_Macro: 0.505 | FBeta_0: 0.595 | FBeta_1: 0.229
 Rec0: 0.570 | Rec1: 0.231
-max_depth=5 | learning_rate=0.05 | n_estimators=500 || FBeta_2 (TARGET): 0.660 | Rec2: 0.748 | FBeta_Macro: 0.500 | FBeta_0: 0.643 | FBeta_1: 0.197
-Rec0: 0.628 | Rec1: 0.192
+max_depth=5 | learning_rate=0.05 | n_estimators=500 || FBeta_2 (TARGET): 0.662 | Rec2: 0.750 | FBeta_Macro: 0.502 | FBeta_0: 0.645 | FBeta_1: 0.198
+Rec0: 0.631 | Rec1: 0.193
 max_depth=3 | learning_rate=0.1 | n_estimators=200 || FBeta_2 (TARGET): 0.705 | Rec2: 0.847 | FBeta_Macro: 0.504 | FBeta_0: 0.517 | FBeta_1: 0.289
 Rec0: 0.482 | Rec1: 0.308
 max_depth=3 | learning_rate=0.1 | n_estimators=300 || FBeta_2 (TARGET): 0.699 | Rec2: 0.827 | FBeta_Macro: 0.507 | FBeta_0: 0.536 | FBeta_1: 0.286
