@@ -1,0 +1,14 @@
+=== GRU CALIBRATION RESULTS ===
+Model: best_gru_mega_model.pth (Fold 1)
+Optimal T Parameter: 1.5000
+Original Cross-Entropy Loss: 0.8764
+Calibrated Cross-Entropy Loss: 0.8570
+
+Expected Calibration Error (ECE):
+ECE (Uncalibrated): 0.1111
+ECE (Calibrated):   0.0946
+
+Mean Probability Distribution for Class 2:
+Mean predicted probability (Uncalibrated): 0.2681
+Mean predicted probability (Calibrated):   0.2509
+True frequency of injuries in the set:     0.1570

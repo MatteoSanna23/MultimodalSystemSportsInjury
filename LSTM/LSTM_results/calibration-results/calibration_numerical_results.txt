@@ -1,0 +1,16 @@
+=== LSTM CALIBRATION RESULTS ===
+Model: best_lstm_mega_model.pth (Fold 3)
+Optimal T Parameter: 1.4674
+Original Cross-Entropy Loss: 0.8737
+Calibrated Cross-Entropy Loss: 0.8610
+
+Expected Calibration Error (ECE):
+ECE (Uncalibrated): 0.0916
+ECE (Calibrated):   0.0779
+
+Mean Probability Distribution for Class 2:
+Mean predicted probability (Uncalibrated): 0.2427
+Mean predicted probability (Calibrated):   0.2291
+True frequency of injuries in the set:     0.1512
+
+This file does not alter the network weights; it only converts raw logits into statistically valid probabilities for the clinical interface.
