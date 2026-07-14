@@ -17,16 +17,19 @@ import joblib
 import matplotlib.pyplot as plt
 from sklearn.calibration import CalibrationDisplay
 
-# Suppress verbose LightGBM logs to keep the terminal clean.
 warnings.filterwarnings('ignore')
 
-# 1. Data loading
+# ==========================================
+# 0. DATA LOADING AND SETUP
+# ==========================================
 df = pd.read_csv(r"C:\Users\leozi\Desktop\uni\Magi\AI in Medicine\Multimodalproject\MultimodalSystemSportsInjury\multimodal_sports_injury_dataset.csv")
 X = df.drop(['injury_occurred', 'athlete_id', 'session_id'], axis=1)
 y = df['injury_occurred']
 groups = df['athlete_id']
 
-# 2. Preprocessing and balancing options
+# ==========================================
+# PHASE 1: PREPROCESSING SELECTION
+# ==========================================
 imputer_options = [
     ('KNN', KNNImputer(n_neighbors=5)),
     ('Median', SimpleImputer(strategy='median')),
@@ -47,15 +50,17 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 PREPROCESSING_RESULTS_FILE = OUTPUT_DIR / "lightgbm_best_preprocessing.txt"
 PARAMETER_RESULTS_FILE = OUTPUT_DIR / "lightgbm_best_parameters.txt"
 
-# --- NUOVA DIRECTORY PER LA CALIBRAZIONE ---
+# Calibration output directory.
 CALIB_DIR = OUTPUT_DIR / "calibration_results"
 CALIB_DIR.mkdir(parents=True, exist_ok=True)
 CALIB_RESULTS_FILE = CALIB_DIR / "lightgbm_calibration_metrics.txt"
 
-# --- NUOVO PARAMETRO PER FBETA SCORE ---
+# F-beta target emphasis for the selection phase.
 BETA = 2.0  # Puoi modificare questo valore (es. 2.0 per dare più peso alla recall, 0.5 per la precision)
 
-# 3. Parameters to test only after finding the best preprocessing combination
+# ==========================================
+# PHASE 2: HYPERPARAMETER TUNING
+# ==========================================
 param_grid = {
     'max_depth': [3, 5],
     'learning_rate': [0.01, 0.05, 0.1],
@@ -90,6 +95,7 @@ def build_model(use_gpu=True, **config):
 
 
 def build_preprocessor(num_strategy, scaler, cat_cols, num_cols):
+    # Build the fold-local preprocessing pipeline.
     num_pipe = Pipeline([
         ('imputer', num_strategy),
         ('scaler', scaler),
@@ -124,12 +130,14 @@ def evaluate_combo(imp_obj, scl_obj, bal_name, config=None):
         sample_weights = None
         y_train_res = y_train
 
+        # Apply the requested balancing strategy.
         if bal_name == 'ClassWeight':
             sample_weights = compute_sample_weight('balanced', y_train)
         elif bal_name == 'SMOTE':
             smote = SMOTE(random_state=42)
             X_train_proc, y_train_res = smote.fit_resample(X_train_proc, y_train)
 
+        # Train the LightGBM model for the current configuration.
         model = build_model(USE_GPU, **config)
 
         if sample_weights is not None:
@@ -140,6 +148,7 @@ def evaluate_combo(imp_obj, scl_obj, bal_name, config=None):
         if FORCE_GPU and model.booster_.params.get('device_type', 'cpu') != 'gpu':
             raise RuntimeError('LightGBM did not use GPU as requested.')
 
+        # Evaluate the held-out fold.
         y_pred = model.predict(X_test_proc)
         
         # Calculate Macro FBeta and Individual FBetas
@@ -172,7 +181,7 @@ def format_config(config, keys):
     return " | ".join(f"{key}={config[key]}" for key in keys)
 
 
-# 4. Phase 1: select the best preprocessing and balancing combination
+# Phase 1: select the best preprocessing and balancing combination.
 print("LightGBM GPU mode enabled.")
 with open(PREPROCESSING_RESULTS_FILE, "w", encoding="utf-8") as preprocessing_file:
     preprocessing_file.write(f"PHASE 1 - PREPROCESSING SELECTION (OPTIMIZING FOR CLASS 2 FBETA-SCORE, Beta={BETA})\n")
@@ -304,9 +313,9 @@ with open(PARAMETER_RESULTS_FILE, "w", encoding="utf-8") as parameter_file:
             print("\nNo valid parameter configuration was found.")
 
 
-# =====================================================================
-# 6. PHASE 3: FINAL MODEL CALIBRATION (ISOLATED VALIDATION FOLD)
-# =====================================================================
+# ==========================================
+# PHASE 3: FINAL MODEL CALIBRATION
+# ==========================================
 if best_param_result['config'] is not None and best_preproc['imp_obj'] is not None:
     print("\n" + "="*60)
     print("PHASE 3 - FINAL MODEL CALIBRATION")
@@ -321,24 +330,24 @@ if best_param_result['config'] is not None and best_preproc['imp_obj'] is not No
         
         best_config = best_param_result['config'].copy()
         
-        # Extract a single split (1 fold) from GroupKFold
+        # Extract a single split (1 fold) from GroupKFold.
         train_idx, calib_idx = next(gkf.split(X, y, groups=groups))
         
-        # Select the data
+        # Select the data.
         X_train_full, X_calib = X.iloc[train_idx], X.iloc[calib_idx]
         y_train_full, y_calib = y.iloc[train_idx], y.iloc[calib_idx]
         
-        # Combine the data, resetting the index for PredefinedSplit
+        # Combine the data, resetting the index for PredefinedSplit.
         X_combined = pd.concat([X_train_full, X_calib], axis=0).reset_index(drop=True)
         y_combined = pd.concat([y_train_full, y_calib], axis=0).reset_index(drop=True)
         
         num_cols = X.select_dtypes(include=[np.number]).columns.tolist()
         cat_cols = X.select_dtypes(include=['object']).columns.tolist()
         
-        # 1. End-to-End Pipeline Construction
+        # Build the end-to-end pipeline.
         steps = []
         
-        # A) Preprocessor
+        # A) Preprocessor.
         preprocessor = build_preprocessor(
             best_preproc['imp_obj'], 
             best_preproc['scl_obj'], 
@@ -347,11 +356,11 @@ if best_param_result['config'] is not None and best_preproc['imp_obj'] is not No
         )
         steps.append(('preprocessor', preprocessor))
         
-        # B) Balancing
+        # B) Balancing.
         if best_preproc['bal_name'] == 'SMOTE':
             steps.append(('smote', SMOTE(random_state=42)))
             
-        # C) Base Model (Build first, then update class_weight to avoid dict collision)
+        # C) Base model.
         base_model = build_model(USE_GPU, **best_config)
         
         if best_preproc['bal_name'] == 'ClassWeight':
@@ -361,21 +370,18 @@ if best_param_result['config'] is not None and best_preproc['imp_obj'] is not No
         
         pipeline = ImbPipeline(steps)
         
-        # 2. Manual training for Pre-Calibration evaluation
+        # Train the base model for the pre-calibration evaluation.
         print("Training the base model on 80% of the data for pre-calibration testing...")
         pipeline.fit(X_train_full, y_train_full)
         y_calib_proba_pre = pipeline.predict_proba(X_calib)
         log_loss_pre = log_loss(y_calib, y_calib_proba_pre)
         
-        # 3. PredefinedSplit Setup
-        # An array where -1 indicates training data and 0 indicates validation data
+        # Prepare the PredefinedSplit mask.
         test_fold = np.full(len(X_combined), -1)
         test_fold[len(X_train_full):] = 0 
         ps = PredefinedSplit(test_fold)
         
-        # 4. Calibration (Bypass the cv='prefit' bug)
-        # Pass the entire pipeline: CalibratedClassifierCV will use PredefinedSplit to 
-        # train the pipeline safely on fold -1 and calibrate it on fold 0.
+        # Fit calibration using the isolated validation fold.
         print("Calibrating on the isolated 20% using PredefinedSplit...")
         calibrated_model = CalibratedClassifierCV(
             estimator=pipeline, 
@@ -384,7 +390,7 @@ if best_param_result['config'] is not None and best_preproc['imp_obj'] is not No
         )
         calibrated_model.fit(X_combined, y_combined)
         
-        # 5. Post-Calibration Evaluation
+        # Evaluate the calibrated probabilities.
         y_calib_proba_post = calibrated_model.predict_proba(X_calib)
         log_loss_post = log_loss(y_calib, y_calib_proba_post)
         
@@ -399,7 +405,7 @@ if best_param_result['config'] is not None and best_preproc['imp_obj'] is not No
         calib_file.write(res_str)
         print(res_str)
         
-        # 6. Saving Artifacts for Production
+        # Save the fitted artifacts.
         joblib.dump(pipeline, CALIB_DIR / "final_base_pipeline.pkl")
         joblib.dump(calibrated_model, CALIB_DIR / "final_calibrated_pipeline.pkl")
         

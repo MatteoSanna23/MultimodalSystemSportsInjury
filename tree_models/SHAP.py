@@ -17,11 +17,17 @@ from sklearn.utils.class_weight import compute_sample_weight
 
 warnings.filterwarnings('ignore')
 
+# ==========================================
+# 0. DATA LOADING AND SETUP
+# ==========================================
 BASE_DIR = Path(r"C:\Users\leozi\Desktop\uni\Magi\AI in Medicine\Multimodalproject\MultimodalSystemSportsInjury")
 DATA_FILE = BASE_DIR / 'multimodal_sports_injury_dataset.csv'
 RESULTS_DIR = BASE_DIR / 'preProcessing' / 'preProcessingres' / 'SHAP'
 RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
+# ==========================================
+# PHASE 1: MODEL SPECIFICATIONS
+# ==========================================
 MODEL_SPECS = {
     'LightGBM': {
         'output_file': RESULTS_DIR / 'lightgbm_shap_report.txt',
@@ -71,6 +77,9 @@ MODEL_SPECS = {
     },
 }
 
+# ==========================================
+# PHASE 2: PREPROCESSING AND MODEL HELPERS
+# ==========================================
 def load_dataset():
     df = pd.read_csv(DATA_FILE)
     X = df.drop(['injury_occurred', 'athlete_id', 'session_id'], axis=1)
@@ -78,6 +87,7 @@ def load_dataset():
     return X, y
 
 def build_preprocessor(imputer_name, scaler_name, cat_cols, num_cols):
+    # Build the preprocessing pipeline for the selected model.
     imputer_map = {
         'KNN': KNNImputer(n_neighbors=5),
         'Median': SimpleImputer(strategy='median'),
@@ -102,6 +112,7 @@ def build_preprocessor(imputer_name, scaler_name, cat_cols, num_cols):
     )
 
 def build_model(model_name, params, use_gpu):
+    # Instantiate the model requested by the SHAP report.
     if model_name == 'LightGBM':
         model_params = dict(
             objective='multiclass',
@@ -152,6 +163,9 @@ def get_feature_names(preprocessor, num_cols, cat_cols):
     cat_names = cat_encoder.get_feature_names_out(cat_cols).tolist()
     return num_names + cat_names
 
+# ==========================================
+# PHASE 3: FITTING AND EXPLANATION
+# ==========================================
 def fit_and_explain(model_name, spec, X, y):
     num_cols = X.select_dtypes(include=[np.number]).columns.tolist()
     cat_cols = X.select_dtypes(include=['object']).columns.tolist()
@@ -185,7 +199,7 @@ def fit_and_explain(model_name, spec, X, y):
     if spec['use_gpu'] and model_name in {'LightGBM', 'XGBoost'}:
         print(f'{model_name} trained with GPU settings.')
 
-    # Sample for SHAP explainer performance
+    # Sample for SHAP explainer performance.
     sample_size = min(300, X_processed.shape[0])
     if sample_size < X_processed.shape[0]:
         sample_indices = np.random.RandomState(42).choice(X_processed.shape[0], size=sample_size, replace=False)
@@ -196,7 +210,7 @@ def fit_and_explain(model_name, spec, X, y):
     explainer = shap.TreeExplainer(model)
     shap_values = explainer.shap_values(X_shap)
     
-    # Calculate mean absolute SHAP values for ranking (Global Report)
+    # Calculate mean absolute SHAP values for ranking (Global Report).
     if isinstance(shap_values, list):
         shap_stack = np.stack(shap_values, axis=0)
         mean_shap = np.mean(np.abs(shap_stack), axis=(0, 2))
@@ -207,17 +221,19 @@ def fit_and_explain(model_name, spec, X, y):
 
     top_indices = np.argsort(mean_shap)[::-1][:20]
 
-    # --- SHAP PLOTTING SECTION ---
+    # ==========================================
+    # PHASE 4: SHAP PLOTTING
+    # ==========================================
     
-    # Create a subfolder for the current model plots
+    # Create a subfolder for the current model plots.
     model_plot_dir = RESULTS_DIR / model_name
     model_plot_dir.mkdir(parents=True, exist_ok=True)
     
-    # Ensure X_shap_df is a standard DataFrame
+    # Ensure X_shap_df is a standard DataFrame.
     X_shap_df = pd.DataFrame(X_shap, columns=feature_names)
 
-    # Standardize shap_values format to iterate over classes correctly
-    # (Fixes the issue where some models return a 3D array instead of a list)
+    # Standardize shap_values format to iterate over classes correctly.
+    # This handles models that return a 3D array instead of a list.
     if isinstance(shap_values, list):
         num_classes = len(shap_values)
         class_shap_arrays = shap_values
@@ -230,15 +246,15 @@ def fit_and_explain(model_name, spec, X, y):
 
     class_names = ["Non_Injured", "At_Risk", "Injured"]
 
-    # Loop securely over the correctly identified number of classes
+    # Loop securely over the correctly identified number of classes.
     for class_idx in range(num_classes):
-        # Prevent IndexError in case the model detects unexpected classes
+        # Prevent IndexError in case the model detects unexpected classes.
         class_name = class_names[class_idx] if class_idx < len(class_names) else f"Class_{class_idx}"
         
-        # Extract the specific 2D matrix for the current class
+        # Extract the specific 2D matrix for the current class.
         current_shap_values = class_shap_arrays[class_idx]
         
-        # 1. SUMMARY PLOT (Saved in model subfolder)
+        # 1. SUMMARY PLOT (Saved in model subfolder).
         plt.figure()
         shap.summary_plot(current_shap_values, X_shap_df, show=False)
         plt.title(f"Summary Plot: {model_name} - {class_name}")
@@ -247,7 +263,7 @@ def fit_and_explain(model_name, spec, X, y):
         plt.close()
         print(f"Saved Summary Plot for {model_name} - {class_name}")
 
-        # 2. DEPENDENCE PLOT (Saved in model subfolder)
+        # 2. DEPENDENCE PLOT (Saved in model subfolder).
         mean_shap_class = np.abs(current_shap_values).mean(axis=0)
         top_idx_class = np.argsort(mean_shap_class)[-1]
         top_feature_class = feature_names[top_idx_class]

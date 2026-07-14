@@ -21,7 +21,9 @@ from sklearn.preprocessing import MinMaxScaler, OneHotEncoder, StandardScaler
 import warnings
 warnings.filterwarnings('ignore')
 
-# 1. Data Loading
+# ==========================================
+# 0. DATA LOADING AND SETUP
+# ==========================================
 print("Loading data...")
 df = pd.read_csv("../multimodal_sports_injury_dataset.csv")
 X = df.drop(["injury_occurred", "athlete_id", "session_id"], axis=1)
@@ -30,7 +32,7 @@ groups = df["athlete_id"]
 
 gkf = GroupKFold(n_splits=5)
 
-# Setup Output Directories
+# Setup output directories.
 OUTPUT_DIR = Path("./preProcessingRes/rf")
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 CALIB_DIR = OUTPUT_DIR / "calibration_results"
@@ -40,7 +42,9 @@ preprocessing_results_path = OUTPUT_DIR / "rf_best_preprocessing.txt"
 rf_results_path = OUTPUT_DIR / "rf_best_parameters.txt"
 calib_metrics_path = CALIB_DIR / "rf_calibration_metrics.txt"
 
-# 2. Preprocessing options to compare
+# ==========================================
+# PHASE 1: PREPROCESSING SCREENING
+# ==========================================
 missing_options = {
     "KNN": KNNImputer(n_neighbors=5),
     "MEDIAN": SimpleImputer(strategy="median"),
@@ -69,6 +73,7 @@ rf_grid_configs = list(ParameterGrid(rf_param_grid))
 def build_preprocessor(
     missing_transformer, scaling_transformer, numeric_cols, categorical_cols
 ):
+    # Build the fold-local preprocessing pipeline.
     num_pipe = Pipeline(
         [
             ("imputer", missing_transformer),
@@ -132,6 +137,7 @@ with open(preprocessing_results_path, "w", encoding="utf-8") as file:
             X_train_proc = preprocessor.fit_transform(X_train)
             X_test_proc = preprocessor.transform(X_test)
 
+            # Apply the selected balancing strategy.
             if balancing_name == "SMOTE":
                 sampler = SMOTE(random_state=42)
                 X_train_proc, y_train = sampler.fit_resample(X_train_proc, y_train)
@@ -139,6 +145,7 @@ with open(preprocessing_results_path, "w", encoding="utf-8") as file:
             else:
                 class_weight = "balanced"
 
+            # Train the Random Forest model for this configuration.
             model = RandomForestClassifier(
                 class_weight=class_weight,
                 random_state=42,
@@ -152,6 +159,7 @@ with open(preprocessing_results_path, "w", encoding="utf-8") as file:
 
             model.fit(X_train_proc, y_train)
 
+            # Evaluate the held-out fold.
             y_pred = model.predict(X_test_proc)
             f2s = fbeta_score(
                 y_test, y_pred, labels=[0, 1, 2], average=None, zero_division=0, beta=2
@@ -247,6 +255,7 @@ if best_config:
                 X_train_proc = preprocessor.fit_transform(X_train)
                 X_test_proc = preprocessor.transform(X_test)
 
+                # Apply the selected balancing strategy.
                 if best_config["balancing"] == "SMOTE":
                     sampler = SMOTE(random_state=42)
                     X_train_proc, y_train = sampler.fit_resample(X_train_proc, y_train)
@@ -254,6 +263,7 @@ if best_config:
                 else:
                     class_weight = "balanced"
 
+                # Train the tuned Random Forest configuration.
                 model = RandomForestClassifier(
                     class_weight=class_weight,
                     random_state=42,
@@ -263,6 +273,7 @@ if best_config:
 
                 model.fit(X_train_proc, y_train)
 
+                # Evaluate the held-out fold.
                 y_pred = model.predict(X_test_proc)
                 f2s = fbeta_score(
                     y_test, y_pred, labels=[0, 1, 2], average=None, zero_division=0, beta=2
@@ -327,20 +338,20 @@ if best_rf_config is not None and best_config is not None:
         calib_file.write(f"PHASE 3 - FINAL MODEL CALIBRATION (Method: Sigmoid / Platt Scaling)\n")
         calib_file.write("-" * 120 + "\n")
         
-        # Extract a single isolated split from GroupKFold
+        # Extract a single isolated split from GroupKFold.
         train_idx, calib_idx = next(gkf.split(X, y, groups=groups))
         
         X_train_full, X_calib = X.iloc[train_idx], X.iloc[calib_idx]
         y_train_full, y_calib = y.iloc[train_idx], y.iloc[calib_idx]
         
-        # Combine data for PredefinedSplit indexing
+        # Combine data for PredefinedSplit indexing.
         X_combined = pd.concat([X_train_full, X_calib], axis=0).reset_index(drop=True)
         y_combined = pd.concat([y_train_full, y_calib], axis=0).reset_index(drop=True)
         
         num_cols = X.select_dtypes(include=[np.number]).columns.tolist()
         cat_cols = X.select_dtypes(include=['object']).columns.tolist()
 
-        # 1. Build the End-to-End Pipeline
+        # Build the end-to-end pipeline.
         steps = []
         
         preprocessor = build_preprocessor(
@@ -348,7 +359,7 @@ if best_rf_config is not None and best_config is not None:
         )
         steps.append(('preprocessor', preprocessor))
 
-        # Handle class balancing method directly based on Phase 1 winning config
+        # Handle the balancing method based on the Phase 1 winner.
         rf_class_weight = "balanced" if best_config["balancing"] == "class_weight" else None
         
         if best_config["balancing"] == "SMOTE":
@@ -364,18 +375,18 @@ if best_rf_config is not None and best_config is not None:
 
         pipeline = ImbPipeline(steps)
 
-        # 2. Train uncalibrated model for Pre-Calibration metrics
+        # Train the uncalibrated pipeline for the pre-calibration metrics.
         print("Training the base pipeline on 80% of the data for pre-calibration testing...")
         pipeline.fit(X_train_full, y_train_full)
         y_calib_proba_pre = pipeline.predict_proba(X_calib)
         log_loss_pre = log_loss(y_calib, y_calib_proba_pre)
 
-        # 3. Setup PredefinedSplit
+        # Setup the PredefinedSplit.
         test_fold = np.full(len(X_combined), -1)
         test_fold[len(X_train_full):] = 0 
         ps = PredefinedSplit(test_fold)
 
-        # 4. Fit Calibration (isolated safely via PredefinedSplit)
+        # Fit calibration on the isolated validation fold.
         print("Calibrating on the isolated 20% using PredefinedSplit...")
         calibrated_model = CalibratedClassifierCV(
             estimator=pipeline, 
@@ -384,7 +395,7 @@ if best_rf_config is not None and best_config is not None:
         )
         calibrated_model.fit(X_combined, y_combined)
 
-        # 5. Post-Calibration Evaluation
+        # Evaluate the calibrated probabilities.
         y_calib_proba_post = calibrated_model.predict_proba(X_calib)
         log_loss_post = log_loss(y_calib, y_calib_proba_post)
 
@@ -399,14 +410,14 @@ if best_rf_config is not None and best_config is not None:
         calib_file.write(res_str)
         print(res_str)
 
-        # 6. Saving Artifacts
+        # Save the fitted artifacts.
         joblib.dump(pipeline, CALIB_DIR / "rf_final_base_pipeline.pkl")
         joblib.dump(calibrated_model, CALIB_DIR / "rf_final_calibrated_pipeline.pkl")
         print(f"Models successfully saved to:\n{CALIB_DIR}")
 
-# ==========================================
-# PHASE 4: CALIBRATION VISUALIZATION
-# ==========================================
+        # ==========================================
+        # PHASE 4: CALIBRATION VISUALIZATION
+        # ==========================================
         print("\n" + "="*60)
         print("PHASE 4 - CALIBRATION VISUALIZATION")
         print("="*60)

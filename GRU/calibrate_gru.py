@@ -19,7 +19,7 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # Import your modules
-from model import InjuryPredictionGRU
+from MultimodalSystemSportsInjury.GRU.model import InjuryPredictionGRU
 from LSTM.sliding_windows import create_sliding_windows, SportsInjuryDataset
 
 # Configuration

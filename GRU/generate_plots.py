@@ -28,7 +28,7 @@ if str(ROOT_DIR) not in sys.path:
     sys.path.append(str(ROOT_DIR))
 
 from LSTM.sliding_windows import create_sliding_windows, SportsInjuryDataset
-from model import InjuryPredictionGRU, InjuryPredictionTransformer
+from MultimodalSystemSportsInjury.GRU.model import InjuryPredictionGRU, InjuryPredictionTransformer
 
 # ==========================================
 # GLOBAL CONFIGURATIONS
