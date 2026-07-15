@@ -1,0 +1,33 @@
+MODEL: RandomForest
+SOURCE NOTE: Best config taken from preProcessingres/rf/best_preprocessing_config.txt and results_random_forest_grid.txt
+PREPROCESSING:
+   Imputer: KNN
+   Scaler: StdScaler
+   Balancing: ClassWeight
+PARAMETERS:
+   n_estimators: 200
+   max_depth: 10
+   max_features: sqrt
+   min_samples_leaf: 5
+
+TOP 20 SHAP FEATURES:
+01. recovery_score || Mean |SHAP|: 0.097264
+02. sleep_quality || Mean |SHAP|: 0.038692
+03. fatigue_index || Mean |SHAP|: 0.034117
+04. stress_level || Mean |SHAP|: 0.016376
+05. training_load || Mean |SHAP|: 0.012130
+06. hydration_level || Mean |SHAP|: 0.012016
+07. training_intensity || Mean |SHAP|: 0.009087
+08. heart_rate || Mean |SHAP|: 0.006784
+09. training_duration || Mean |SHAP|: 0.006119
+10. altitude || Mean |SHAP|: 0.002865
+11. gait_speed || Mean |SHAP|: 0.002394
+12. ground_reaction_force || Mean |SHAP|: 0.002268
+13. body_temperature || Mean |SHAP|: 0.001809
+14. range_of_motion || Mean |SHAP|: 0.001807
+15. step_count || Mean |SHAP|: 0.001738
+16. humidity || Mean |SHAP|: 0.001668
+17. cadence || Mean |SHAP|: 0.001649
+18. joint_angles || Mean |SHAP|: 0.001499
+19. ambient_temperature || Mean |SHAP|: 0.001497
+20. muscle_activity || Mean |SHAP|: 0.001433

@@ -1,0 +1,161 @@
+Using device: cuda
+Loading data...
+
+======================================================================
+PHASE 1: LSTM GRID SEARCH (Epochs: 15)
+======================================================================
+
+Testing Config -> Seq_Length: 3 | Hidden_Dim: 32
+      [Fold 1] Epoch 0: Train F2: 0.6170 | Val F2: 0.6215
+      [Fold 1] Epoch 5: Train F2: 0.7369 | Val F2: 0.7320
+      [Fold 1] Epoch 10: Train F2: 0.7486 | Val F2: 0.7443
+      [Fold 2] Epoch 0: Train F2: 0.6426 | Val F2: 0.6017
+      [Fold 2] Epoch 5: Train F2: 0.7398 | Val F2: 0.7082
+      [Fold 2] Epoch 10: Train F2: 0.7468 | Val F2: 0.7230
+      [Fold 3] Epoch 0: Train F2: 0.6142 | Val F2: 0.6165
+      [Fold 3] Epoch 5: Train F2: 0.7343 | Val F2: 0.7294
+      [Fold 3] Epoch 10: Train F2: 0.7464 | Val F2: 0.7460
+      [Fold 4] Epoch 0: Train F2: 0.6369 | Val F2: 0.6337
+      [Fold 4] Epoch 5: Train F2: 0.7336 | Val F2: 0.7348
+      [Fold 4] Epoch 10: Train F2: 0.6982 | Val F2: 0.6931
+      [Fold 5] Epoch 0: Train F2: 0.6439 | Val F2: 0.6475
+      [Fold 5] Epoch 5: Train F2: 0.6402 | Val F2: 0.6350
+      [Fold 5] Epoch 10: Train F2: 0.7502 | Val F2: 0.7301
+Result: Seq:3 | Hidden:32 || Mean F2_C2: 0.7411 | Mean Rec_C2: 0.9259
+
+Testing Config -> Seq_Length: 3 | Hidden_Dim: 64
+      [Fold 1] Epoch 0: Train F2: 0.6164 | Val F2: 0.6243
+      [Fold 1] Epoch 5: Train F2: 0.7217 | Val F2: 0.7269
+      [Fold 1] Epoch 10: Train F2: 0.7296 | Val F2: 0.7367
+      [Fold 2] Epoch 0: Train F2: 0.6797 | Val F2: 0.6458
+      [Fold 2] Epoch 5: Train F2: 0.7458 | Val F2: 0.7095
+      [Fold 2] Epoch 10: Train F2: 0.7528 | Val F2: 0.7303
+      [Fold 3] Epoch 0: Train F2: 0.6631 | Val F2: 0.6649
+      [Fold 3] Epoch 5: Train F2: 0.7357 | Val F2: 0.7421
+      [Fold 3] Epoch 10: Train F2: 0.7275 | Val F2: 0.7051
+      [Fold 4] Epoch 0: Train F2: 0.6603 | Val F2: 0.6616
+      [Fold 4] Epoch 5: Train F2: 0.7078 | Val F2: 0.7101
+      [Fold 4] Epoch 10: Train F2: 0.7525 | Val F2: 0.7529
+      [Fold 5] Epoch 0: Train F2: 0.6568 | Val F2: 0.6612
+      [Fold 5] Epoch 5: Train F2: 0.7317 | Val F2: 0.7151
+      [Fold 5] Epoch 10: Train F2: 0.7419 | Val F2: 0.7190
+Result: Seq:3 | Hidden:64 || Mean F2_C2: 0.7480 | Mean Rec_C2: 0.9235
+
+Testing Config -> Seq_Length: 5 | Hidden_Dim: 32
+      [Fold 1] Epoch 0: Train F2: 0.6288 | Val F2: 0.6401
+      [Fold 1] Epoch 5: Train F2: 0.6892 | Val F2: 0.6841
+      [Fold 1] Epoch 10: Train F2: 0.7058 | Val F2: 0.7040
+      [Fold 2] Epoch 0: Train F2: 0.6551 | Val F2: 0.6434
+      [Fold 2] Epoch 5: Train F2: 0.7521 | Val F2: 0.7226
+      [Fold 2] Epoch 10: Train F2: 0.7547 | Val F2: 0.7311
+      [Fold 3] Epoch 0: Train F2: 0.6428 | Val F2: 0.6455
+      [Fold 3] Epoch 5: Train F2: 0.7262 | Val F2: 0.7224
+      [Fold 3] Epoch 10: Train F2: 0.7535 | Val F2: 0.7584
+      [Fold 4] Epoch 0: Train F2: 0.6522 | Val F2: 0.6443
+      [Fold 4] Epoch 5: Train F2: 0.7415 | Val F2: 0.7439
+      [Fold 4] Epoch 10: Train F2: 0.7510 | Val F2: 0.7545
+      [Fold 5] Epoch 0: Train F2: 0.6138 | Val F2: 0.6204
+      [Fold 5] Epoch 5: Train F2: 0.7219 | Val F2: 0.7091
+      [Fold 5] Epoch 10: Train F2: 0.7558 | Val F2: 0.7507
+Result: Seq:5 | Hidden:32 || Mean F2_C2: 0.7514 | Mean Rec_C2: 0.9204
+
+Testing Config -> Seq_Length: 5 | Hidden_Dim: 64
+      [Fold 1] Epoch 0: Train F2: 0.5567 | Val F2: 0.5943
+      [Fold 1] Epoch 5: Train F2: 0.7078 | Val F2: 0.7086
+      [Fold 1] Epoch 10: Train F2: 0.7663 | Val F2: 0.7447
+      [Fold 2] Epoch 0: Train F2: 0.6678 | Val F2: 0.6478
+      [Fold 2] Epoch 5: Train F2: 0.7441 | Val F2: 0.7118
+      [Fold 2] Epoch 10: Train F2: 0.7556 | Val F2: 0.7304
+      [Fold 3] Epoch 0: Train F2: 0.6604 | Val F2: 0.6766
+      [Fold 3] Epoch 5: Train F2: 0.6864 | Val F2: 0.6855
+      [Fold 3] Epoch 10: Train F2: 0.7635 | Val F2: 0.7589
+      [Fold 4] Epoch 0: Train F2: 0.5991 | Val F2: 0.5958
+      [Fold 4] Epoch 5: Train F2: 0.7436 | Val F2: 0.7534
+      [Fold 4] Epoch 10: Train F2: 0.7227 | Val F2: 0.7159
+      [Fold 5] Epoch 0: Train F2: 0.6021 | Val F2: 0.6217
+      [Fold 5] Epoch 5: Train F2: 0.7475 | Val F2: 0.7248
+      [Fold 5] Epoch 10: Train F2: 0.7617 | Val F2: 0.7416
+Result: Seq:5 | Hidden:64 || Mean F2_C2: 0.7528 | Mean Rec_C2: 0.9325
+
+Testing Config -> Seq_Length: 7 | Hidden_Dim: 32
+      [Fold 1] Epoch 0: Train F2: 0.6108 | Val F2: 0.6364
+      [Fold 1] Epoch 5: Train F2: 0.7363 | Val F2: 0.7304
+      [Fold 1] Epoch 10: Train F2: 0.7594 | Val F2: 0.7469
+      [Fold 2] Epoch 0: Train F2: 0.6012 | Val F2: 0.5753
+      [Fold 2] Epoch 5: Train F2: 0.7412 | Val F2: 0.7168
+      [Fold 2] Epoch 10: Train F2: 0.7612 | Val F2: 0.7397
+      [Fold 3] Epoch 0: Train F2: 0.6085 | Val F2: 0.5944
+      [Fold 3] Epoch 5: Train F2: 0.7387 | Val F2: 0.7400
+      [Fold 3] Epoch 10: Train F2: 0.7238 | Val F2: 0.7191
+      [Fold 4] Epoch 0: Train F2: 0.4314 | Val F2: 0.4629
+      [Fold 4] Epoch 5: Train F2: 0.7445 | Val F2: 0.7508
+      [Fold 4] Epoch 10: Train F2: 0.7203 | Val F2: 0.6973
+      [Fold 5] Epoch 0: Train F2: 0.6218 | Val F2: 0.6396
+      [Fold 5] Epoch 5: Train F2: 0.7478 | Val F2: 0.7389
+      [Fold 5] Epoch 10: Train F2: 0.7492 | Val F2: 0.7275
+Result: Seq:7 | Hidden:32 || Mean F2_C2: 0.7544 | Mean Rec_C2: 0.9338
+
+Testing Config -> Seq_Length: 7 | Hidden_Dim: 64
+      [Fold 1] Epoch 0: Train F2: 0.6332 | Val F2: 0.6312
+      [Fold 1] Epoch 5: Train F2: 0.7483 | Val F2: 0.7388
+      [Fold 1] Epoch 10: Train F2: 0.7697 | Val F2: 0.7537
+      [Fold 2] Epoch 0: Train F2: 0.6724 | Val F2: 0.6511
+      [Fold 2] Epoch 5: Train F2: 0.7164 | Val F2: 0.6921
+      [Fold 2] Epoch 10: Train F2: 0.7687 | Val F2: 0.7374
+      [Fold 3] Epoch 0: Train F2: 0.3780 | Val F2: 0.3558
+      [Fold 3] Epoch 5: Train F2: 0.7344 | Val F2: 0.7222
+      [Fold 3] Epoch 10: Train F2: 0.7525 | Val F2: 0.7457
+      [Fold 4] Epoch 0: Train F2: 0.6676 | Val F2: 0.6758
+      [Fold 4] Epoch 5: Train F2: 0.7419 | Val F2: 0.7521
+      [Fold 4] Epoch 10: Train F2: 0.7629 | Val F2: 0.7511
+      [Fold 5] Epoch 0: Train F2: 0.6786 | Val F2: 0.6872
+      [Fold 5] Epoch 5: Train F2: 0.7538 | Val F2: 0.7394
+      [Fold 5] Epoch 10: Train F2: 0.7623 | Val F2: 0.7433
+Result: Seq:7 | Hidden:64 || Mean F2_C2: 0.7566 | Mean Rec_C2: 0.9302
+
+Phase 1 Complete! Best Configuration: {'seq_length': 7, 'hidden_dim': 64}
+
+======================================================================
+PHASE 2: MEGA TRAINING (Epochs: 100, Early Stopping: 15)
+Using Optimal Config: Seq_Length: 7, Hidden_Dim: 64
+======================================================================
+      [Fold 1] Epoch 0: Train F2: 0.6247 | Val F2: 0.6423
+      [Fold 1] Epoch 5: Train F2: 0.6963 | Val F2: 0.7058
+      [Fold 1] Epoch 10: Train F2: 0.7704 | Val F2: 0.7470
+      [Fold 1] Epoch 15: Train F2: 0.7803 | Val F2: 0.7581
+      [Fold 1] Epoch 20: Train F2: 0.7541 | Val F2: 0.7163
+      [Fold 1] Epoch 25: Train F2: 0.8062 | Val F2: 0.7235
+      [Fold 1] Epoch 30: Train F2: 0.8041 | Val F2: 0.6786
+      [Fold 1] Early stopping triggered at epoch 31
+      [Fold 2] Epoch 0: Train F2: 0.6549 | Val F2: 0.6319
+      [Fold 2] Epoch 5: Train F2: 0.7366 | Val F2: 0.7157
+      [Fold 2] Epoch 10: Train F2: 0.7488 | Val F2: 0.7374
+      [Fold 2] Epoch 15: Train F2: 0.7482 | Val F2: 0.7252
+      [Fold 2] Epoch 20: Train F2: 0.7612 | Val F2: 0.7241
+      [Fold 2] Epoch 25: Train F2: 0.7964 | Val F2: 0.7253
+      [Fold 2] Early stopping triggered at epoch 30
+      [Fold 3] Epoch 0: Train F2: 0.6533 | Val F2: 0.6634
+      [Fold 3] Epoch 5: Train F2: 0.7445 | Val F2: 0.7516
+      [Fold 3] Epoch 10: Train F2: 0.7325 | Val F2: 0.7284
+      [Fold 3] Epoch 15: Train F2: 0.7677 | Val F2: 0.7611
+      [Fold 3] Epoch 20: Train F2: 0.7772 | Val F2: 0.7515
+      [Fold 3] Epoch 25: Train F2: 0.7910 | Val F2: 0.7483
+      [Fold 3] Early stopping triggered at epoch 29
+      [Fold 4] Epoch 0: Train F2: 0.6498 | Val F2: 0.6356
+      [Fold 4] Epoch 5: Train F2: 0.7446 | Val F2: 0.7418
+      [Fold 4] Epoch 10: Train F2: 0.7471 | Val F2: 0.7416
+      [Fold 4] Epoch 15: Train F2: 0.7536 | Val F2: 0.7017
+      [Fold 4] Epoch 20: Train F2: 0.7829 | Val F2: 0.7553
+      [Fold 4] Epoch 25: Train F2: 0.7985 | Val F2: 0.7342
+      [Fold 4] Early stopping triggered at epoch 29
+      [Fold 5] Epoch 0: Train F2: 0.6010 | Val F2: 0.6152
+      [Fold 5] Epoch 5: Train F2: 0.7396 | Val F2: 0.7211
+      [Fold 5] Epoch 10: Train F2: 0.7561 | Val F2: 0.7343
+      [Fold 5] Epoch 15: Train F2: 0.7514 | Val F2: 0.7325
+      [Fold 5] Epoch 20: Train F2: 0.7782 | Val F2: 0.7551
+      [Fold 5] Epoch 25: Train F2: 0.7963 | Val F2: 0.7327
+      [Fold 5] Epoch 30: Train F2: 0.8083 | Val F2: 0.7135
+      [Fold 5] Epoch 35: Train F2: 0.8137 | Val F2: 0.6618
+      [Fold 5] Early stopping triggered at epoch 36
+
+Process fully completed! Check 'lstm_grid_search_results.txt' and 'lstm_mega_training_report.txt'.

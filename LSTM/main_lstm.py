@@ -131,8 +131,19 @@ def run_cv_training(seq_length, hidden_dim, epochs, use_early_stopping=False, sa
                 optimizer.step()
                 train_loss += loss.item() * batch_X.size(0)
                 
-            # Validation at the end of each epoch (Needed for Early Stopping)
+            # Validation & Training monitoring
             model.eval()
+            
+            # Monitoring Training Performance
+            train_preds, train_targets = [], []
+            with torch.no_grad():
+                for batch_X, batch_y in train_loader:
+                    preds = torch.max(model(batch_X.to(DEVICE)), 1)[1]
+                    train_preds.extend(preds.cpu().numpy())
+                    train_targets.extend(batch_y.numpy())
+            train_f2 = fbeta_score(train_targets, train_preds, beta=2.0, average=None, labels=[0, 1, 2], zero_division=0)[2]
+            
+            # Monitoring Validation Performance
             all_preds, all_targets = [], []
             with torch.no_grad():
                 for batch_X, batch_y in test_loader:
@@ -142,6 +153,10 @@ def run_cv_training(seq_length, hidden_dim, epochs, use_early_stopping=False, sa
                     
             val_f2 = fbeta_score(all_targets, all_preds, beta=2.0, average=None, labels=[0, 1, 2], zero_division=0)[2]
             val_rec = recall_score(all_targets, all_preds, average=None, labels=[0, 1, 2], zero_division=0)[2]
+            
+            # Log progress
+            if epoch % 5 == 0:
+                print(f"      [Fold {fold}] Epoch {epoch}: Train F2: {train_f2:.4f} | Val F2: {val_f2:.4f}")
             
             # Early Stopping Logic
             if val_f2 > fold_best_val_f2:

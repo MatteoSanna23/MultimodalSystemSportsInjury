@@ -1,0 +1,32 @@
+MODEL: LightGBM
+SOURCE NOTE: Best config taken from preProcessingres/Light_GBM/lightgbm_best_parameters.txt
+PREPROCESSING:
+   Imputer: Median
+   Scaler: StdScaler
+   Balancing: ClassWeight
+PARAMETERS:
+   max_depth: 3
+   learning_rate: 0.05
+   n_estimators: 300
+
+TOP 20 SHAP FEATURES:
+01. recovery_score || Mean |SHAP|: 0.858139
+02. sleep_quality || Mean |SHAP|: 0.254221
+03. hydration_level || Mean |SHAP|: 0.157653
+04. stress_level || Mean |SHAP|: 0.125346
+05. fatigue_index || Mean |SHAP|: 0.115550
+06. heart_rate || Mean |SHAP|: 0.106754
+07. training_load || Mean |SHAP|: 0.094230
+08. training_intensity || Mean |SHAP|: 0.057142
+09. training_duration || Mean |SHAP|: 0.030720
+10. body_temperature || Mean |SHAP|: 0.016368
+11. range_of_motion || Mean |SHAP|: 0.015305
+12. altitude || Mean |SHAP|: 0.014560
+13. gait_speed || Mean |SHAP|: 0.014232
+14. humidity || Mean |SHAP|: 0.012799
+15. step_count || Mean |SHAP|: 0.012098
+16. ground_reaction_force || Mean |SHAP|: 0.011381
+17. cadence || Mean |SHAP|: 0.011375
+18. muscle_activity || Mean |SHAP|: 0.009866
+19. bmi || Mean |SHAP|: 0.009070
+20. ambient_temperature || Mean |SHAP|: 0.008137

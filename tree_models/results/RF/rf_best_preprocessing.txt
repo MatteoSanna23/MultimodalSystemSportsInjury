@@ -1,0 +1,12 @@
+Missing | Normalization | Balancing || Macro F2 | F2 C0 | F2 C1 | F2 C2 | Recall C0 | Recall C1 | Recall C2
+--------------------------------------------------------------------------------------------------------------
+missing:KNN, norm:STD, balance:class_weight || F2M: 0.492 | F20: 0.812 | F21: 0.026 | F22: 0.639 | Rec0: 0.842 | Rec1: 0.021 | Rec2: 0.701
+missing:KNN, norm:STD, balance:SMOTE || F2M: 0.481 | F20: 0.813 | F21: 0.018 | F22: 0.611 | Rec0: 0.846 | Rec1: 0.015 | Rec2: 0.662
+missing:KNN, norm:MinMax, balance:class_weight || F2M: 0.492 | F20: 0.812 | F21: 0.026 | F22: 0.638 | Rec0: 0.842 | Rec1: 0.021 | Rec2: 0.700
+missing:KNN, norm:MinMax, balance:SMOTE || F2M: 0.500 | F20: 0.677 | F21: 0.188 | F22: 0.634 | Rec0: 0.670 | Rec1: 0.177 | Rec2: 0.713
+missing:MEDIAN, norm:STD, balance:class_weight || F2M: 0.491 | F20: 0.812 | F21: 0.024 | F22: 0.639 | Rec0: 0.842 | Rec1: 0.019 | Rec2: 0.702
+missing:MEDIAN, norm:STD, balance:SMOTE || F2M: 0.480 | F20: 0.816 | F21: 0.023 | F22: 0.602 | Rec0: 0.850 | Rec1: 0.019 | Rec2: 0.649
+missing:MEDIAN, norm:MinMax, balance:class_weight || F2M: 0.491 | F20: 0.812 | F21: 0.024 | F22: 0.638 | Rec0: 0.842 | Rec1: 0.020 | Rec2: 0.702
+missing:MEDIAN, norm:MinMax, balance:SMOTE || F2M: 0.497 | F20: 0.676 | F21: 0.181 | F22: 0.634 | Rec0: 0.669 | Rec1: 0.171 | Rec2: 0.713
+--------------------------------------------------------------------------------------------------------------
+BEST PREPROCESSING CONFIG (by F2 C2): {'missing': 'KNN', 'normalization': 'STD', 'balancing': 'class_weight'} with F22: 0.639 | F2M: 0.492 | F20: 0.812 | F21: 0.026

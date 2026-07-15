@@ -1,0 +1,14 @@
+=== TRANSFORMER CALIBRATION RESULTS ===
+Model: best_transformer_mega_model.pth (Fold 4)
+Optimal T Parameter: 1.5627
+Original Cross-Entropy Loss: 0.8571
+Calibrated Cross-Entropy Loss: 0.8310
+
+Expected Calibration Error (ECE):
+ECE (Uncalibrated): 0.0711
+ECE (Calibrated):   0.0500
+
+Mean Probability Distribution for Class 2:
+Mean predicted probability (Uncalibrated): 0.2118
+Mean predicted probability (Calibrated):   0.1897
+True frequency of injuries in the set:     0.1407

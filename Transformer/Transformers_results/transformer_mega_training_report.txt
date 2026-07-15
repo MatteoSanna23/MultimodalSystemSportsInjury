@@ -1,0 +1,25 @@
+======================================================================
+TRANSFORMER MEGA TRAINING REPORT (Time Steps: 7, Hidden: 64)
+======================================================================
+FOLD-BY-FOLD RESULTS (Class 2):
+Fold 1 || F2_C2: 0.7576 | Recall_C2: 0.9071
+Fold 2 || F2_C2: 0.7593 | Recall_C2: 0.9091
+Fold 3 || F2_C2: 0.7755 | Recall_C2: 0.9755
+Fold 4 || F2_C2: 0.7832 | Recall_C2: 0.9383
+Fold 5 || F2_C2: 0.7598 | Recall_C2: 0.9368
+----------------------------------------------------------------------
+FINAL AGGREGATED METRICS:
+Mean F2_C2:     0.7671 +/- 0.0103
+Mean Recall_C2: 0.9333 +/- 0.0249
+----------------------------------------------------------------------
+Best Model Saved: best_transformer_mega_model.pth (from Fold 4)
+
+======================================================================
+PHASE 2: MEGA TRAINING (Epochs: 100, Early Stopping: 15)
+Using Optimal Config: Seq_Length: 7, Hidden_Dim: 64
+======================================================================
+      [Fold 1] Early stopping triggered at epoch 34
+      [Fold 2] Early stopping triggered at epoch 36
+      [Fold 3] Early stopping triggered at epoch 29
+      [Fold 4] Early stopping triggered at epoch 67
+      [Fold 5] Early stopping triggered at epoch 37
